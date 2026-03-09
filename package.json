@@ -1,0 +1,63 @@
+{
+  "name": "badminton-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:generate:local": "/bin/zsh -lc 'test -f .env.local || { echo \".env.local not found\"; exit 1; }; set -a; source .env.local; set +a; npx prisma generate'",
+    "db:migrate:local": "/bin/zsh -lc 'test -f .env.local || { echo \".env.local not found\"; exit 1; }; set -a; source .env.local; set +a; npx prisma migrate dev'",
+    "db:seed:local": "/bin/zsh -lc 'test -f .env.local || { echo \".env.local not found\"; exit 1; }; set -a; source .env.local; set +a; npx prisma db seed'",
+    "data:sync-local-images": "tsx scripts/sync-local-gear-images.ts",
+    "data:trim-cutout-images": "tsx scripts/trim-cutout-images.ts",
+    "data:update-local-cover-images": "tsx scripts/update-local-cover-images.ts",
+    "data:sync-supabase-to-local": "tsx scripts/sync-supabase-to-local.ts",
+    "data:link-purchases-to-gear": "tsx scripts/link-purchases-to-gear.ts",
+    "data:import-initial": "npm run data:sync-local-images && tsx scripts/import-initial-data.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "@vercel/blob": "^0.25.0",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
+    "framer-motion": "^12.34.3",
+    "html-to-image": "^1.11.13",
+    "lucide-react": "^0.575.0",
+    "next": "^15.0.0",
+    "next-auth": "^4.24.11",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "swr": "^2.4.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "prisma": "^6.0.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

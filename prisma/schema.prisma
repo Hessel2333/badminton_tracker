@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+}
+
+enum WishlistStatus {
+  WANT
+  WATCHING
+  PURCHASED
+  DROPPED
+}
+
+enum ActivitySource {
+  MANUAL
+  APPLE_HEALTH
+}
+
+enum ItemStatus {
+  IN_USE
+  USED_UP
+  WORN_OUT
+  STORED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Brand {
+  id             String           @id @default(cuid())
+  name           String
+  normalizedName String           @unique @map("normalized_name")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  gearItems      GearItem[]
+  purchases      PurchaseRecord[]
+  wishlistItems  WishlistItem[]
+
+  @@index([name])
+  @@map("brands")
+}
+
+model Category {
+  id            String           @id @default(cuid())
+  name          String           @unique
+  isSystem      Boolean          @default(false) @map("is_system")
+  sortOrder     Int              @default(0) @map("sort_order")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  gearItems     GearItem[]
+  purchases     PurchaseRecord[]
+  wishlistItems WishlistItem[]
+
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model RatingDimension {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label     String
+  weight    Decimal  @default(1) @db.Decimal(5, 2)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sortOrder])
+  @@map("rating_dimensions")
+}
+
+model GearItem {
+  id            String           @id @default(cuid())
+  name          String
+  brandId       String?          @map("brand_id")
+  categoryId    String?          @map("category_id")
+  modelCode     String?          @map("model_code")
+  specJson      Json?            @map("spec_json")
+  coverImageUrl String?          @map("cover_image_url")
+  notes         String?
+  createdAt     DateTime         @default(now()) @map("created_at")
+  brand         Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category      Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  ratings       GearRating[]
+  externalViews ExternalReview[]
+  purchases     PurchaseRecord[]
+
+  @@index([name])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("gear_items")
+}
+
+model GearRating {
+  id         String   @id @default(cuid())
+  gearItemId String   @map("gear_item_id")
+  power      Decimal  @db.Decimal(4, 2)
+  control    Decimal  @db.Decimal(4, 2)
+  durability Decimal  @db.Decimal(4, 2)
+  comfort    Decimal  @db.Decimal(4, 2)
+  value      Decimal  @db.Decimal(4, 2)
+  overall    Decimal  @db.Decimal(4, 2)
+  reviewText String?  @map("review_text")
+  ratedAt    DateTime @default(now()) @map("rated_at")
+  gearItem   GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+
+  @@index([gearItemId, ratedAt])
+  @@map("gear_ratings")
+}
+
+model ExternalReview {
+  id          String   @id @default(cuid())
+  gearItemId  String   @map("gear_item_id")
+  sourceName  String   @map("source_name")
+  sourceUrl   String   @map("source_url")
+  scoreText   String?  @map("score_text")
+  summaryText String?  @map("summary_text")
+  capturedAt  DateTime @default(now()) @map("captured_at")
+  gearItem    GearItem @relation(fields: [gearItemId], references: [id], onDelete: Cascade)
+
+  @@index([gearItemId])
+  @@map("external_reviews")
+}
+
+model PurchaseRecord {
+  id               String    @id @default(cuid())
+  gearItemId       String?   @map("gear_item_id")
+  brandId          String?   @map("brand_id")
+  categoryId       String?   @map("category_id")
+  itemNameSnapshot String    @map("item_name_snapshot")
+  unitPriceCny     Decimal   @map("unit_price_cny") @db.Decimal(12, 2)
+  quantity         Int       @default(1)
+  totalPriceCny    Decimal   @map("total_price_cny") @db.Decimal(12, 2)
+  purchaseDate     DateTime  @map("purchase_date")
+  channel          String?
+  itemStatus       ItemStatus @default(IN_USE) @map("item_status")
+  isSecondHand     Boolean   @default(false) @map("is_second_hand")
+  notes            String?
+  receiptImageUrl  String?   @map("receipt_image_url")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  gearItem         GearItem? @relation(fields: [gearItemId], references: [id], onDelete: SetNull)
+  brand            Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  wishlistLinks    WishlistTransition[]
+
+  @@index([purchaseDate])
+  @@index([itemStatus])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("purchase_records")
+}
+
+model WishlistItem {
+  id                  String               @id @default(cuid())
+  name                String
+  brandId             String?              @map("brand_id")
+  categoryId          String?              @map("category_id")
+  targetPriceCny      Decimal?             @map("target_price_cny") @db.Decimal(12, 2)
+  currentSeenPriceCny Decimal?             @map("current_seen_price_cny") @db.Decimal(12, 2)
+  priority            Int                  @default(3)
+  status              WishlistStatus       @default(WANT)
+  sourceUrl           String?              @map("source_url")
+  imageUrl            String?              @map("image_url")
+  notes               String?
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  brand               Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category            Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  transitions         WishlistTransition[]
+
+  @@index([status])
+  @@index([priority])
+  @@map("wishlist_items")
+}
+
+model WishlistTransition {
+  id              String         @id @default(cuid())
+  wishlistItemId  String         @map("wishlist_item_id")
+  fromStatus      WishlistStatus @map("from_status")
+  toStatus        WishlistStatus @map("to_status")
+  changedAt       DateTime       @default(now()) @map("changed_at")
+  linkedPurchaseId String?       @map("linked_purchase_id")
+  wishlistItem    WishlistItem   @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+  linkedPurchase  PurchaseRecord? @relation(fields: [linkedPurchaseId], references: [id], onDelete: SetNull)
+
+  @@index([wishlistItemId, changedAt])
+  @@map("wishlist_transitions")
+}
+
+model ActivitySession {
+  id          String         @id @default(cuid())
+  activityDate DateTime      @map("activity_date")
+  durationMin Int            @map("duration_min")
+  source      ActivitySource @default(MANUAL)
+  externalId  String?        @map("external_id")
+  metaJson    Json?          @map("meta_json")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@index([activityDate])
+  @@map("activity_sessions")
+}
