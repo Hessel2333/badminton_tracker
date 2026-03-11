@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { GearDetailEditor } from "@/components/forms/GearDetailEditor";
+import { canonicalOptionalBrandDisplayName, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/server/number";
 
@@ -75,6 +76,24 @@ export default async function GearDetailPage({ params }: Props) {
               select: { name: true }
             }
           }
+        },
+        events: {
+          orderBy: [{ eventAt: "desc" }, { createdAt: "desc" }],
+          take: 120,
+          select: {
+            id: true,
+            eventType: true,
+            quantityDelta: true,
+            fromStatus: true,
+            toStatus: true,
+            eventAt: true,
+            notes: true,
+            purchaseRecord: {
+              select: {
+                itemNameSnapshot: true
+              }
+            }
+          }
         }
       }
     }),
@@ -101,8 +120,13 @@ export default async function GearDetailPage({ params }: Props) {
       }))}
       initialData={{
         id: item.id,
-        name: item.name,
-        brandName: item.brand?.name ?? "",
+        name: canonicalProductName({
+          name: item.name,
+          brandName: item.brand?.name ?? "",
+          modelCode: item.modelCode ?? "",
+          categoryName: item.category?.name ?? ""
+        }),
+        brandName: canonicalOptionalBrandDisplayName(item.brand?.name),
         categoryId: item.categoryId ?? "",
         modelCode: item.modelCode ?? "",
         coverImageUrl: item.coverImageUrl ?? "",
@@ -122,6 +146,16 @@ export default async function GearDetailPage({ params }: Props) {
           sourceUrl: review.sourceUrl,
           scoreText: review.scoreText ?? "",
           summaryText: review.summaryText ?? ""
+        })),
+        events: item.events.map((event) => ({
+          id: event.id,
+          eventType: event.eventType,
+          quantityDelta: event.quantityDelta,
+          fromStatus: event.fromStatus ?? null,
+          toStatus: event.toStatus ?? null,
+          eventAt: event.eventAt.toISOString(),
+          notes: event.notes ?? "",
+          itemNameSnapshot: event.purchaseRecord?.itemNameSnapshot ?? ""
         })),
         purchases: item.purchases.map((purchase) => ({
           id: purchase.id,

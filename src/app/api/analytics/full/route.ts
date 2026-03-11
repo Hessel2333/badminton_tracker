@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  getAnalyticsAvailableYears,
   getBrandShare,
   getCategoryShare,
   getPurchaseFrequency,
+  getShuttleInsights,
   getSpendingTrend
 } from "@/lib/analytics/queries";
 import { prisma } from "@/lib/prisma";
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
   if ("error" in auth) return auth.error;
 
   const parsed = rangeSchema.safeParse({
-    range: request.nextUrl.searchParams.get("range") ?? "12m"
+    range: request.nextUrl.searchParams.get("range") ?? "all"
   });
 
   if (!parsed.success) {
@@ -25,11 +27,13 @@ export async function GET(request: NextRequest) {
 
   const range = parsed.data.range;
 
-  const [trend, brandShare, categoryShare, frequency, wishlistCounts, gearRanking] = await Promise.all([
+  const [availableYears, trend, brandShare, categoryShare, frequency, shuttleInsights, wishlistCounts, gearRanking] = await Promise.all([
+    getAnalyticsAvailableYears(),
     getSpendingTrend(range),
     getBrandShare(range),
     getCategoryShare(range),
     getPurchaseFrequency("month", range),
+    getShuttleInsights(range),
     prisma.wishlistItem.groupBy({
       by: ["status"],
       _count: { _all: true }
@@ -54,10 +58,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     range,
+    availableYears,
     trend,
     brandShare,
     categoryShare,
     frequency,
+    shuttleInsights,
     wishlistCounts: wishlistCounts.map((item) => ({
       status: item.status,
       count: item._count._all

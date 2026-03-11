@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, WishlistStatus } from "@prisma/client";
 
+import { canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
@@ -18,11 +19,22 @@ export async function POST(request: NextRequest) {
   }
 
   const input = parsed.data;
+  const category = input.categoryId
+    ? await prisma.category.findUnique({
+        where: { id: input.categoryId },
+        select: { name: true }
+      })
+    : null;
+  const canonicalName = canonicalProductName({
+    name: input.name,
+    brandName: input.brandName ?? "",
+    categoryName: category?.name ?? ""
+  });
   const brandId = await findOrCreateBrandId(input.brandName ?? null);
 
   const item = await prisma.wishlistItem.create({
     data: {
-      name: input.name,
+      name: canonicalName,
       brandId,
       categoryId: input.categoryId ?? null,
       targetPriceCny: input.targetPriceCny != null ? new Prisma.Decimal(input.targetPriceCny) : null,

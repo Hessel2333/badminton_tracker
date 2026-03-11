@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
-import { computeOverallRating } from "@/lib/business-rules";
+import { canonicalProductName, computeOverallRating } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
@@ -20,9 +20,21 @@ export async function POST(request: NextRequest) {
   }
 
   const input = parsed.data;
+  const category = input.categoryId
+    ? await prisma.category.findUnique({
+        where: { id: input.categoryId },
+        select: { name: true }
+      })
+    : null;
+  const canonicalName = canonicalProductName({
+    name: input.name,
+    brandName: input.brandName ?? "",
+    modelCode: input.modelCode ?? "",
+    categoryName: category?.name ?? ""
+  });
   const brandId = await findOrCreateBrandId(input.brandName ?? null);
   const localCoverImage = await findLocalImageUrl({
-    name: input.name,
+    name: canonicalName,
     brandName: input.brandName,
     modelCode: input.modelCode
   });
@@ -30,7 +42,7 @@ export async function POST(request: NextRequest) {
   const created = await prisma.$transaction(async (tx) => {
     const gear = await tx.gearItem.create({
       data: {
-        name: input.name,
+        name: canonicalName,
         brandId,
         categoryId: input.categoryId ?? null,
         modelCode: input.modelCode ?? null,

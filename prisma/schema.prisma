@@ -31,6 +31,13 @@ enum ItemStatus {
   STORED
 }
 
+enum PurchaseEventType {
+  PURCHASED
+  CONSUMED
+  DAMAGED
+  STATUS_CHANGED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -97,6 +104,7 @@ model GearItem {
   ratings       GearRating[]
   externalViews ExternalReview[]
   purchases     PurchaseRecord[]
+  events        PurchaseEvent[]
 
   @@index([name])
   @@index([brandId])
@@ -145,6 +153,7 @@ model PurchaseRecord {
   quantity         Int       @default(1)
   totalPriceCny    Decimal   @map("total_price_cny") @db.Decimal(12, 2)
   purchaseDate     DateTime  @map("purchase_date")
+  usedUpAt         DateTime? @map("used_up_at")
   channel          String?
   itemStatus       ItemStatus @default(IN_USE) @map("item_status")
   isSecondHand     Boolean   @default(false) @map("is_second_hand")
@@ -155,12 +164,33 @@ model PurchaseRecord {
   brand            Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
   category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   wishlistLinks    WishlistTransition[]
+  events           PurchaseEvent[]
 
   @@index([purchaseDate])
   @@index([itemStatus])
   @@index([brandId])
   @@index([categoryId])
   @@map("purchase_records")
+}
+
+model PurchaseEvent {
+  id               String            @id @default(cuid())
+  purchaseRecordId String?           @map("purchase_record_id")
+  gearItemId       String?           @map("gear_item_id")
+  eventType        PurchaseEventType @map("event_type")
+  quantityDelta    Int               @default(0) @map("quantity_delta")
+  fromStatus       ItemStatus?       @map("from_status")
+  toStatus         ItemStatus?       @map("to_status")
+  eventAt          DateTime          @default(now()) @map("event_at")
+  notes            String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  purchaseRecord   PurchaseRecord?   @relation(fields: [purchaseRecordId], references: [id], onDelete: SetNull)
+  gearItem         GearItem?         @relation(fields: [gearItemId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseRecordId, eventAt])
+  @@index([gearItemId, eventAt])
+  @@index([eventType, eventAt])
+  @@map("purchase_events")
 }
 
 model WishlistItem {
@@ -211,4 +241,22 @@ model ActivitySession {
 
   @@index([activityDate])
   @@map("activity_sessions")
+}
+
+model ProjectCatalogOverride {
+  id                    String   @id @default(cuid())
+  entryKey              String   @unique @map("entry_key")
+  name                  String
+  brandName             String   @map("brand_name")
+  modelCode             String?  @map("model_code")
+  categoryName          String   @map("category_name")
+  suggestedUnitPriceCny Decimal? @map("suggested_unit_price_cny") @db.Decimal(12, 2)
+  popularity            Int      @default(50)
+  imageUrl              String?  @map("image_url")
+  tagsJson              Json?    @map("tags_json")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@index([categoryName, popularity])
+  @@map("project_catalog_overrides")
 }

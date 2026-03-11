@@ -40,6 +40,13 @@ const statusLabel: Record<WishlistStatus, string> = {
   DROPPED: "放弃"
 };
 
+const statusBadgeVariant: Record<WishlistStatus, "accent" | "success" | "warning" | "danger" | "neutral"> = {
+  WANT: "warning",
+  WATCHING: "neutral",
+  PURCHASED: "accent",
+  DROPPED: "danger"
+};
+
 const formInit = {
   name: "",
   brandName: "",
@@ -164,7 +171,7 @@ export function WishlistManager({
 
   return (
     <div className="space-y-6">
-      <Card animate={false}>
+      <Card entryAnimation={false}>
         <h2 className="font-display text-xl text-neon">新增心愿单</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="xl:col-span-2">
@@ -276,8 +283,8 @@ export function WishlistManager({
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
-          <Card key={item.id} className="relative overflow-hidden">
+        {items.map((item, index) => (
+          <Card key={item.id} className="relative overflow-hidden" transition={{ delay: (index % 6) * 0.05 }}>
             <div className="absolute -right-7 -top-7 h-20 w-20 rounded-full bg-accent/15 blur-xl" />
             <div className="relative space-y-3">
               <div className="flex items-start justify-between gap-2">
@@ -287,7 +294,7 @@ export function WishlistManager({
                     {item.brand?.name ?? "未标记品牌"} · {item.category?.name ?? "未分类"}
                   </p>
                 </div>
-                <Badge variant={item.status === "PURCHASED" ? "accent" : "neutral"}>
+                <Badge variant={statusBadgeVariant[item.status]}>
                   {statusLabel[item.status]}
                 </Badge>
               </div>

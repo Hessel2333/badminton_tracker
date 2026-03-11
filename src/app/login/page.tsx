@@ -54,8 +54,10 @@ export default function LoginPage() {
         onSubmit={onSubmit}
         className="w-full max-w-md rounded-2xl border border-border bg-panel/90 p-6 shadow-panel backdrop-blur md:p-8"
       >
-        <p className="font-display text-xl tracking-[0.18em] text-neon">羽阵档案</p>
-        <h1 className="mt-2 text-2xl font-semibold text-text">管理员登录</h1>
+        <p className="font-display text-xl tracking-[0.1em] text-neon">
+          羽痕 <span className="ml-2 text-sm tracking-widest text-accent uppercase font-sans">Plume Scar</span>
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-text">系统控制台登录</h1>
         <p className="mt-1 text-sm text-mute">单用户模式，保护你的投入与装备数据。</p>
 
         <div className="mt-6 space-y-4">

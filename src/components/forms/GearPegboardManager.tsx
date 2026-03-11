@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImageDown, LayoutGrid, RotateCcw, Sparkles } from "lucide-react";
+import { ImageDown, RotateCcw, Sparkles, Tag, Database, Package } from "lucide-react";
 import { toPng } from "html-to-image";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { ControlPanel } from "@/components/ui/ControlPanel";
 
 type BoardInstance = {
   instanceId: string;
@@ -23,6 +25,7 @@ type BoardInstance = {
   height: number;
   defaultRotate: number;
   active: boolean;
+  historyType: "usedUp" | "wornOut" | null;
   indexInGroup: number;
 };
 
@@ -64,6 +67,14 @@ function isShuttleCategory(categoryName: string) {
   return categoryName.includes("羽毛球");
 }
 
+function historicalQuantity(item: GearWallItem, categoryName: string) {
+  if (isShuttleCategory(categoryName)) return Math.max(0, item.usedUpQuantity);
+  if (isRacketCategory(categoryName) || isShoesCategory(categoryName)) {
+    return Math.max(0, item.wornOutQuantity);
+  }
+  return 0;
+}
+
 function inferCategoryNameFromSeed(seed: string) {
   const text = seed.toLowerCase();
   if (/球拍|racket|thruster|hammer|铁锤|tk[\s\-_]?hmr|frames?/i.test(text)) return "球拍";
@@ -80,7 +91,6 @@ function resolveCategoryName(item: GearWallItem) {
 }
 
 function physicalLongestCmByCategory(categoryName: string) {
-  // User-locked anchors: racket 66.5cm, single shoe 28cm, shuttle tube 40cm.
   if (isRacketCategory(categoryName)) return 66.5;
   if (isShoesCategory(categoryName)) return 28;
   if (isShuttleCategory(categoryName)) return 40;
@@ -148,6 +158,14 @@ function normalizeKey(value: string) {
   return value.toLowerCase().replace(/\s+/g, "");
 }
 
+function normalizeBrandGroupKey(value: string) {
+  const normalized = normalizeKey(value);
+  if (!normalized) return normalized;
+  if (normalized === "rsl" || normalized === "亚狮龙") return "rsl";
+  if (normalized === "超牌" || normalized === "chao") return "chao";
+  return normalized;
+}
+
 function modelSortKey(value: string) {
   const text = normalizeKey(value);
   const match = text.match(/(?:no\.?|no)?(\d{1,2})/i);
@@ -158,7 +176,10 @@ function modelSortKey(value: string) {
 }
 
 function compareShuttleInstance(a: BoardInstance, b: BoardInstance) {
-  const brandCompare = normalizeKey(a.brandName).localeCompare(normalizeKey(b.brandName), "zh-Hans-CN");
+  const brandCompare = normalizeBrandGroupKey(a.brandName).localeCompare(
+    normalizeBrandGroupKey(b.brandName),
+    "zh-Hans-CN"
+  );
   if (brandCompare !== 0) return brandCompare;
 
   const modelA = modelSortKey(a.modelName || a.name);
@@ -179,7 +200,7 @@ function sortShuttleByBrandAndModel(instances: BoardInstance[]) {
   const groupMap = new Map<string, BoardInstance[]>();
 
   for (const instance of instances) {
-    const key = normalizeKey(instance.brandName) || "unknown-brand";
+    const key = normalizeBrandGroupKey(instance.brandName) || "unknown-brand";
     const group = groupMap.get(key) ?? [];
     group.push(instance);
     groupMap.set(key, group);
@@ -322,6 +343,7 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
 
   const racketBottom = y + rowHeight;
   const shoesTop = (racketInstances.length > 0 || shuttleInstances.length > 0) ? racketBottom + SECTION_GAP : BOARD_PADDING;
+
   type RowItem = {
     instance: BoardInstance;
     width: number;
@@ -715,6 +737,7 @@ export function GearPegboardManager({
   const [showBounds, setShowBounds] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -792,11 +815,11 @@ export function GearPegboardManager({
     };
   }, [imageMetricsByUrl, initialItems, normalizedRacketByUrl]);
 
-  const instances = useMemo(() => {
+  const instances = useMemo<BoardInstance[]>(() => {
     return initialItems.flatMap((item) => {
       const categoryName = resolveCategoryName(item);
       const activeCount = Math.max(0, item.activeQuantity);
-      const showCount = activeCount > 0 ? activeCount : 1;
+      const historyCount = historicalQuantity(item, categoryName);
       const originalImageUrl = item.coverImageUrl ?? null;
       const isRacket = isRacketCategory(categoryName);
       const imageUrl =
@@ -818,8 +841,8 @@ export function GearPegboardManager({
         ? normalizedRacketByUrl[originalImageUrl ?? ""] ? 0 : autoRotateForRacket(metrics)
         : 0;
 
-      return Array.from({ length: showCount }, (_, index) => ({
-        instanceId: `${item.id}::${index}`,
+      const activeInstances = Array.from({ length: activeCount }, (_, index) => ({
+        instanceId: `${item.id}::active::${index}`,
         gearId: item.id,
         name: item.name,
         categoryName,
@@ -829,12 +852,37 @@ export function GearPegboardManager({
         width: size.width,
         height: size.height,
         defaultRotate,
-        active: activeCount > 0,
+        active: true,
+        historyType: null,
         indexInGroup: index + 1
       }));
+
+      if (!showHistory || historyCount <= 0) {
+        return activeInstances;
+      }
+
+      const historyType: BoardInstance["historyType"] = isShuttleCategory(categoryName) ? "usedUp" : "wornOut";
+      const historyInstances = Array.from({ length: historyCount }, (_, index) => ({
+        instanceId: `${item.id}::history::${index}`,
+        gearId: item.id,
+        name: item.name,
+        categoryName,
+        brandName: item.brand?.name ?? "",
+        modelName: item.modelCode ?? item.name,
+        imageUrl,
+        width: size.width,
+        height: size.height,
+        defaultRotate,
+        active: false,
+        historyType,
+        indexInGroup: activeCount + index + 1
+      }));
+
+      return [...activeInstances, ...historyInstances];
     });
   }, [
     boardWidth,
+    showHistory,
     imageMetricsByUrl,
     initialItems,
     normalizedRacketByUrl,
@@ -846,6 +894,7 @@ export function GearPegboardManager({
     () => new Map(instances.map((item) => [item.instanceId, item])),
     [instances]
   );
+
   const zoneGuides = useMemo(() => {
     let shuttleBottom = 0;
     let racketBottom = 0;
@@ -1081,8 +1130,7 @@ export function GearPegboardManager({
 
       const dataUrl = await toPng(node, {
         cacheBust: true,
-        pixelRatio: 2.4,
-        backgroundColor: "#ffffff"
+        pixelRatio: 2.4
       });
       const fileName = `pegboard-${new Date().toISOString().slice(0, 10)}.png`;
       const blob = await (await fetch(dataUrl)).blob();
@@ -1113,6 +1161,11 @@ export function GearPegboardManager({
     ? Math.max(boardHeight, Math.round((boardWidth || 900) * 1.22))
     : boardHeight;
 
+  const boardModes = [
+    { id: "active", label: "仅在用" },
+    { id: "history", label: "完整历史" }
+  ];
+
   if (initialItems.length === 0) {
     return (
       <Card className="py-14 text-center">
@@ -1126,36 +1179,56 @@ export function GearPegboardManager({
     );
   }
 
+  if (instances.length === 0) {
+    return (
+      <div className="space-y-4">
+        <ControlPanel>
+          <SegmentedControl
+            options={boardModes}
+            value={showHistory ? "history" : "active"}
+            onChange={(v) => setShowHistory(v === "history")}
+          />
+        </ControlPanel>
+        <Card className="py-14 text-center">
+          <p className="text-text-mute">当前没有在用装备，切到“显示历史”可以查看已用完或已退役的装备。</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={applyRecommendedLayout}>
-            <Sparkles size={16} className="mr-2" />
-            推荐布局
-          </Button>
-          <Button variant="secondary" onClick={resetLayout}>
-            <RotateCcw size={16} className="mr-2" />
-            重置布局
-          </Button>
-          <Button variant="secondary" onClick={() => setShowBounds((prev) => !prev)}>
-            {showBounds ? "隐藏边框" : "显示边框"}
-          </Button>
-          <Button variant="secondary" onClick={() => setShareMode((prev) => !prev)}>
-            {shareMode ? "退出分享模式" : "分享模式"}
-          </Button>
-          <Button variant="secondary" onClick={exportBoardImage} disabled={isExporting}>
-            <ImageDown size={16} className="mr-2" />
-            {isExporting ? "导出中..." : "导出图片"}
-          </Button>
-        </div>
-        <Link href="/gear-wall">
-          <Button>
-            <LayoutGrid size={16} className="mr-2" />
-            回到方格式装备墙
-          </Button>
-        </Link>
-      </div>
+      <ControlPanel
+        right={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={applyRecommendedLayout} className="px-3">
+              <Sparkles size={14} className="mr-1.5" />
+              推荐布局
+            </Button>
+            <Button variant="secondary" size="sm" onClick={resetLayout} className="px-3">
+              <RotateCcw size={14} className="mr-1.5" />
+              重置
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowBounds((prev) => !prev)} className="px-3">
+              {showBounds ? "隐藏边框" : "显示边框"}
+            </Button>
+            <div className="mx-1 h-4 w-px bg-border/60" />
+            <Button variant="secondary" size="sm" onClick={() => setShareMode((prev) => !prev)} className="px-3">
+              {shareMode ? "常规视图" : "分享模式"}
+            </Button>
+            <Button variant="primary" size="sm" onClick={exportBoardImage} disabled={isExporting} className="px-4">
+              <ImageDown size={14} className="mr-1.5" />
+              {isExporting ? "导出中..." : "保存图片"}
+            </Button>
+          </div>
+        }
+      >
+        <SegmentedControl
+          options={boardModes}
+          value={showHistory ? "history" : "active"}
+          onChange={(v) => setShowHistory(v === "history")}
+        />
+      </ControlPanel>
 
       <Card className="p-4 sm:p-6">
         <div
@@ -1211,7 +1284,11 @@ export function GearPegboardManager({
                     className={cn(
                       "pointer-events-none h-full w-full object-contain",
                       "gear-cutout-flat",
-                      instance.active ? "" : "opacity-45 grayscale"
+                      instance.active
+                        ? ""
+                        : instance.historyType === "usedUp"
+                          ? "opacity-30 grayscale-[0.45] saturate-[0.75]"
+                          : "opacity-45 grayscale-[0.75] saturate-[0.8]"
                     )}
                   />
                 ) : (

@@ -7,7 +7,7 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={cn(
-        "w-full rounded-lg border border-[color:var(--glass-border)] bg-panel2 px-3 py-2 text-sm text-text outline-none transition placeholder:text-mute focus:border-neon/60 focus:ring-2 focus:ring-neon/20",
+        "w-full rounded-xl border border-[var(--field-border)] bg-[var(--field-bg)] px-4 py-3 text-sm text-text shadow-[var(--field-shadow)] outline-none transition placeholder:text-text-mute/60 focus:border-accent focus:bg-[var(--field-bg-focus)] focus:ring-4 focus:ring-accent/8",
         props.className
       )}
     />

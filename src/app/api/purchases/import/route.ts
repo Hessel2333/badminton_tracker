@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
-import { calcTotalPrice } from "@/lib/business-rules";
+import { calcTotalPrice, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
@@ -66,6 +66,11 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     for (const item of parsed) {
+      const canonicalItemName = canonicalProductName({
+        name: item.itemNameSnapshot,
+        brandName: item.brandName || undefined,
+        modelCode: item.modelCode || undefined
+      });
       let brandId: string | null = null;
       if (item.brandName) {
         const normalized = item.brandName.trim().toLowerCase().replace(/\s+/g, " ");
@@ -84,7 +89,8 @@ export async function POST(request: NextRequest) {
       const total = calcTotalPrice(item.unitPriceCny, item.quantity, item.totalPriceCny);
 
       const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
-        itemNameSnapshot: item.itemNameSnapshot,
+        itemNameSnapshot: canonicalItemName,
+        brandName: item.brandName || null,
         brandId,
         modelCode: item.modelCode || null,
         categoryId: null
@@ -93,7 +99,7 @@ export async function POST(request: NextRequest) {
       const row = await tx.purchaseRecord.create({
         data: {
           gearItemId,
-          itemNameSnapshot: item.itemNameSnapshot,
+          itemNameSnapshot: canonicalItemName,
           brandId,
           unitPriceCny: new Prisma.Decimal(item.unitPriceCny),
           quantity: item.quantity,

@@ -3,6 +3,9 @@ export type GearWallItem = {
   name: string;
   coverImageUrl?: string | null;
   modelCode?: string | null;
+  createdAt?: string;
+  latestPurchaseDate?: string | null;
+  referenceUnitPriceCny?: number | null;
   brand?: { name: string } | null;
   category?: { name: string } | null;
   ratings?: Array<{ overall: number | string }>;
@@ -11,4 +14,3 @@ export type GearWallItem = {
   usedUpQuantity: number;
   wornOutQuantity: number;
 };
-

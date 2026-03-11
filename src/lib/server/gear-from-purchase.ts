@@ -1,19 +1,23 @@
 import { Prisma } from "@prisma/client";
 
+import { canonicalProductName } from "@/lib/business-rules";
 import { findLocalImageUrl } from "@/lib/server/local-image-library";
 
 type PurchaseGearInput = {
   itemNameSnapshot: string;
+  brandName?: string | null;
   brandId?: string | null;
   modelCode?: string | null;
   categoryId?: string | null;
   gearItemId?: string | null;
+  allowAutoImageLookup?: boolean;
+  coverImageUrl?: string | null;
 };
 
 type DbClient = Prisma.TransactionClient;
 
-function canonicalName(name: string) {
-  return name.trim().replace(/\s+/g, " ");
+function canonicalName(name: string, brandName?: string | null, modelCode?: string | null) {
+  return canonicalProductName({ name, brandName, modelCode });
 }
 
 function canonicalModelCode(modelCode?: string | null) {
@@ -27,12 +31,13 @@ async function syncGearItemFromPurchaseInput(
   gearItemId: string,
   input: PurchaseGearInput
 ) {
-  const nextName = canonicalName(input.itemNameSnapshot);
+  const nextName = canonicalName(input.itemNameSnapshot, input.brandName, input.modelCode);
   const nextBrandId = input.brandId ?? undefined;
   const nextCategoryId = input.categoryId ?? undefined;
   const nextModelCode = canonicalModelCode(input.modelCode) ?? undefined;
+  const nextCoverImageUrl = input.coverImageUrl ?? undefined;
 
-  if (!nextName && !nextBrandId && !nextCategoryId && !nextModelCode) return;
+  if (!nextName && !nextBrandId && !nextCategoryId && !nextModelCode && !nextCoverImageUrl) return;
 
   await db.gearItem.update({
     where: { id: gearItemId },
@@ -40,7 +45,8 @@ async function syncGearItemFromPurchaseInput(
       name: nextName || undefined,
       brandId: nextBrandId,
       categoryId: nextCategoryId,
-      modelCode: nextModelCode
+      modelCode: nextModelCode,
+      coverImageUrl: nextCoverImageUrl
     }
   });
 }
@@ -49,12 +55,12 @@ export async function resolveOrCreateGearItemIdFromPurchase(
   db: DbClient,
   input: PurchaseGearInput
 ) {
-  const name = canonicalName(input.itemNameSnapshot);
+  const name = canonicalName(input.itemNameSnapshot, input.brandName, input.modelCode);
   if (!name) return null;
   const modelCode = canonicalModelCode(input.modelCode);
 
   if (input.gearItemId) {
-    const existing = await db.gearItem.findUnique({
+      const existing = await db.gearItem.findUnique({
       where: { id: input.gearItemId },
       select: { id: true }
     });
@@ -151,17 +157,19 @@ export async function resolveOrCreateGearItemIdFromPurchase(
     return byName.id;
   }
 
-  const localCoverImage = await findLocalImageUrl({
-    name,
-    modelCode
-  });
+  const localCoverImage = input.allowAutoImageLookup === false
+    ? null
+    : await findLocalImageUrl({
+      name,
+      modelCode
+    });
   const created = await db.gearItem.create({
     data: {
       name,
       brandId: input.brandId ?? null,
       categoryId: input.categoryId ?? null,
       modelCode,
-      coverImageUrl: localCoverImage ?? null
+      coverImageUrl: input.coverImageUrl ?? localCoverImage ?? null
     },
     select: { id: true }
   });

@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { normalizeBrandName } from "@/lib/business-rules";
+import { canonicalBrandDisplayName, normalizeBrandGroupName } from "@/lib/business-rules";
 
 type BrandClient = PrismaClient | Prisma.TransactionClient;
 
@@ -10,12 +10,12 @@ export async function findOrCreateBrandId(brandName?: string | null, client: Bra
     return null;
   }
 
-  const name = brandName.trim();
+  const name = canonicalBrandDisplayName(brandName);
   if (!name) {
     return null;
   }
 
-  const normalizedName = normalizeBrandName(name);
+  const normalizedName = normalizeBrandGroupName(name);
 
   const brand = await client.brand.upsert({
     where: { normalizedName },

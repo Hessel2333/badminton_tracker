@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
-import { computeOverallRating } from "@/lib/business-rules";
+import { canonicalProductName, computeOverallRating } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
@@ -30,6 +30,9 @@ async function getGearDetail(id: string) {
           category: true
         },
         orderBy: { purchaseDate: "desc" }
+      },
+      events: {
+        orderBy: [{ eventAt: "desc" }, { createdAt: "desc" }]
       }
     }
   });
@@ -71,9 +74,21 @@ export async function PUT(request: NextRequest, context: Context) {
   }
 
   const input = parsed.data;
+  const category = input.categoryId
+    ? await prisma.category.findUnique({
+        where: { id: input.categoryId },
+        select: { name: true }
+      })
+    : null;
+  const canonicalName = canonicalProductName({
+    name: input.name,
+    brandName: input.brandName ?? "",
+    modelCode: input.modelCode ?? "",
+    categoryName: category?.name ?? ""
+  });
   const brandId = await findOrCreateBrandId(input.brandName ?? null);
   const localCoverImage = await findLocalImageUrl({
-    name: input.name,
+    name: canonicalName,
     brandName: input.brandName,
     modelCode: input.modelCode
   });
@@ -82,7 +97,7 @@ export async function PUT(request: NextRequest, context: Context) {
     await tx.gearItem.update({
       where: { id },
       data: {
-        name: input.name,
+        name: canonicalName,
         brandId,
         categoryId: input.categoryId ?? null,
         modelCode: input.modelCode ?? null,
@@ -95,7 +110,7 @@ export async function PUT(request: NextRequest, context: Context) {
     await tx.purchaseRecord.updateMany({
       where: { gearItemId: id },
       data: {
-        itemNameSnapshot: input.name,
+        itemNameSnapshot: canonicalName,
         brandId,
         categoryId: input.categoryId ?? null
       }
@@ -178,6 +193,9 @@ export async function PUT(request: NextRequest, context: Context) {
             category: true
           },
           orderBy: { purchaseDate: "desc" }
+        },
+        events: {
+          orderBy: [{ eventAt: "desc" }, { createdAt: "desc" }]
         }
       }
     });

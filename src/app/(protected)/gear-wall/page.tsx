@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/server/number";
 import { ItemStatus } from "@prisma/client";
 
+import { Grid } from "lucide-react";
+
 export default async function GearWallPage() {
   const items = await prisma.gearItem.findMany({
     where: {
@@ -21,7 +23,9 @@ export default async function GearWallPage() {
       purchases: {
         select: {
           quantity: true,
-          itemStatus: true
+          itemStatus: true,
+          purchaseDate: true,
+          unitPriceCny: true
         }
       }
     },
@@ -31,8 +35,9 @@ export default async function GearWallPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        title="装备墙"
-        subtitle="方格式浏览视角，查看已购装备并进入详情编辑。"
+        icon={Grid}
+        title="羽迹档案"
+        subtitle="以方格视角审视你的所有装备资产，支持按状态筛选与深度追溯。"
       />
       <GearWallManager
         initialItems={items.map((item) => ({
@@ -54,6 +59,19 @@ export default async function GearWallPage() {
             0
           ),
           totalQuantity: item.purchases.reduce((sum, purchase) => sum + purchase.quantity, 0),
+          createdAt: item.createdAt.toISOString(),
+          latestPurchaseDate: item.purchases.length
+            ? [...item.purchases]
+              .sort((a, b) => b.purchaseDate.getTime() - a.purchaseDate.getTime())[0]
+              ?.purchaseDate.toISOString() ?? null
+            : null,
+          referenceUnitPriceCny: item.purchases.length
+            ? toNumber(
+              [...item.purchases]
+                .sort((a, b) => b.purchaseDate.getTime() - a.purchaseDate.getTime())[0]
+                ?.unitPriceCny ?? null
+            )
+            : null,
           id: item.id,
           name: item.name,
           coverImageUrl: item.coverImageUrl,

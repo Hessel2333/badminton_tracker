@@ -10,7 +10,7 @@ type LocalImageQuery = {
 const PUBLIC_DIR_NAME = "gear-images";
 const PUBLIC_DIR = path.join(process.cwd(), "public", PUBLIC_DIR_NAME);
 
-const EXACT_NAME_MAP: Record<string, string> = {
+const RAW_EXACT_NAME_MAP: Record<string, string> = {
   "亚狮龙1号": "cutout/rsl_shuttlecock_no1_cutout_01.png",
   "亚狮龙2号": "cutout/rsl_shuttlecock_no2_cutout_01.png",
   "亚狮龙3号": "cutout/rsl_shuttlecock_no3_cutout_01.png",
@@ -20,6 +20,9 @@ const EXACT_NAME_MAP: Record<string, string> = {
   "亚狮龙7号": "cutout/rsl_shuttlecock_no7_cutout_01.png",
   "亚狮龙8号": "cutout/rsl_shuttlecock_no8_cutout_01.png",
   "亚狮龙10号": "cutout/rsl_shuttlecock_no10_cutout_01.png",
+  "亚狮龙Classic": "cutout/rsl_shuttlecock_classic_cutout_01.png",
+  "亚狮龙Supreme": "cutout/rsl_shuttlecock_supreme_cutout_01.png",
+  "亚狮龙Ultimate": "cutout/rsl_shuttlecock_ultimate_cutout_01.png",
   "亚狮龙经典": "cutout/rsl_shuttlecock_classic_cutout_01.png",
   "亚狮龙至尊": "cutout/rsl_shuttlecock_supreme_cutout_01.png",
   "亚狮龙终极": "cutout/rsl_shuttlecock_ultimate_cutout_01.png",
@@ -43,8 +46,24 @@ const EXACT_NAME_MAP: Record<string, string> = {
   "紫超羽毛球": "cutout/chao_shuttlecock_zichao_cutout_01.png",
   "翎美F6": "cutout/lingmei_shuttlecock_f6_cutout_01.png",
   "翎美 F6": "cutout/lingmei_shuttlecock_f6_cutout_01.png",
-  "翎美L06": "original/lingmei_shuttlecock_l06_main_01.webp",
-  "翎美 L06": "original/lingmei_shuttlecock_l06_main_01.webp",
+  "翎美L06": "cutout/lingmei_shuttlecock_l06_cutout_01.png",
+  "翎美 L06": "cutout/lingmei_shuttlecock_l06_cutout_01.png",
+  "精彩永恒G6": "cutout/jingcaiyongheng_shuttlecock_g6_cutout_01.png",
+  "精彩永恒 G6": "cutout/jingcaiyongheng_shuttlecock_g6_cutout_01.png",
+  "精彩永恒G6羽毛球": "cutout/jingcaiyongheng_shuttlecock_g6_cutout_01.png",
+  "精彩永恒 G6 羽毛球": "cutout/jingcaiyongheng_shuttlecock_g6_cutout_01.png",
+  "金威肯": "cutout/weiken_shuttlecock_jinweiken_cutout_01.png",
+  "金威肯羽毛球": "cutout/weiken_shuttlecock_jinweiken_cutout_01.png",
+  "黄威肯": "cutout/weiken_shuttlecock_huangweiken_cutout_01.png",
+  "黄威肯羽毛球": "cutout/weiken_shuttlecock_huangweiken_cutout_01.png",
+  "红威肯": "cutout/weiken_shuttlecock_hongweiken_cutout_01.png",
+  "红威肯羽毛球": "cutout/weiken_shuttlecock_hongweiken_cutout_01.png",
+  "绿威肯": "cutout/weiken_shuttlecock_lvweiken_cutout_01.png",
+  "绿威肯羽毛球": "cutout/weiken_shuttlecock_lvweiken_cutout_01.png",
+  "蓝威肯": "cutout/weiken_shuttlecock_lanweiken_cutout_01.png",
+  "蓝威肯羽毛球": "cutout/weiken_shuttlecock_lanweiken_cutout_01.png",
+  "黑威肯": "cutout/weiken_shuttlecock_heiweiken_cutout_01.png",
+  "黑威肯羽毛球": "cutout/weiken_shuttlecock_heiweiken_cutout_01.png",
   "YONEX AS-50": "cutout/yonex_shuttlecock_as50_cutout_01.png",
   "Yonex AS-50": "cutout/yonex_shuttlecock_as50_cutout_01.png",
   "AS-50": "cutout/yonex_shuttlecock_as50_cutout_01.png",
@@ -61,6 +80,14 @@ function normalize(value: string) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+function compactNormalize(value: string) {
+  return normalize(value).replace(/\s+/g, "");
+}
+
+const EXACT_NAME_MAP = Object.fromEntries(
+  Object.entries(RAW_EXACT_NAME_MAP).map(([key, value]) => [compactNormalize(key), value])
+) as Record<string, string>;
 
 function tokenize(value: string) {
   return normalize(value)
@@ -87,7 +114,7 @@ type GearCategory = "shuttlecock" | "shoes" | "racket" | null;
 function inferCategory(seed: string): GearCategory {
   const text = normalize(seed);
   if (
-    /羽毛球|shuttle|亚狮龙|rsl|no\\s*\\d+|[红黄蓝绿紫粉橙银]超|金红超|chao|lingmei|翎美|yonex|as\\s*50/.test(text)
+    /羽毛球|shuttle|亚狮龙|rsl|no\\s*\\d+|[红黄蓝绿紫粉橙银]超|金红超|chao|lingmei|翎美|weiken|威肯|精彩永恒|jingcaiyongheng|yonex|as\\s*50/.test(text)
   ) {
     return "shuttlecock";
   }
@@ -135,7 +162,7 @@ async function listLocalImageFiles() {
 }
 
 export async function findLocalImageUrl(query: LocalImageQuery): Promise<string | null> {
-  const exact = EXACT_NAME_MAP[query.name];
+  const exact = EXACT_NAME_MAP[compactNormalize(query.name)];
   if (exact) {
     return `/${PUBLIC_DIR_NAME}/${exact}`;
   }

@@ -10,6 +10,11 @@ import { Input } from "@/components/ui/Input";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import {
+  canonicalOptionalBrandDisplayName,
+  canonicalProductName
+} from "@/lib/business-rules";
+import { getPurchaseChannelOptions } from "@/lib/purchase-options";
 import { currency, dateText } from "@/lib/utils";
 
 type Category = {
@@ -60,6 +65,16 @@ type GearDetailData = {
     reviewText: string;
   };
   externalReviews: ExternalReviewInput[];
+  events: Array<{
+    id: string;
+    eventType: "PURCHASED" | "CONSUMED" | "DAMAGED" | "STATUS_CHANGED";
+    quantityDelta: number;
+    fromStatus?: "IN_USE" | "USED_UP" | "WORN_OUT" | "STORED" | null;
+    toStatus?: "IN_USE" | "USED_UP" | "WORN_OUT" | "STORED" | null;
+    eventAt: string;
+    notes: string;
+    itemNameSnapshot: string;
+  }>;
   purchases: PurchaseView[];
 };
 
@@ -69,6 +84,20 @@ const STATUS_LABELS: Record<PurchaseView["itemStatus"], string> = {
   WORN_OUT: "损坏",
   STORED: "闲置"
 };
+
+const EVENT_LABELS: Record<GearDetailData["events"][number]["eventType"], string> = {
+  PURCHASED: "买入",
+  CONSUMED: "用完",
+  DAMAGED: "损坏",
+  STATUS_CHANGED: "状态变更"
+};
+
+function eventTone(eventType: GearDetailData["events"][number]["eventType"]) {
+  if (eventType === "PURCHASED") return "text-accent";
+  if (eventType === "CONSUMED") return "text-warning";
+  if (eventType === "DAMAGED") return "text-danger";
+  return "text-text";
+}
 
 type PurchaseEditForm = {
   itemNameSnapshot: string;
@@ -85,10 +114,14 @@ type PurchaseEditForm = {
   isSecondHand: boolean;
 };
 
-function toDatetimeLocalValue(value: string | Date) {
+function toDateInputValue(value: string | Date) {
   const date = new Date(value);
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-  return date.toISOString().slice(0, 16);
+  return date.toISOString().slice(0, 10);
+}
+
+function toPurchaseIsoDate(value: string) {
+  return new Date(`${value}T00:00:00+08:00`).toISOString();
 }
 
 function fromApiPurchase(item: {
@@ -123,6 +156,48 @@ function fromApiPurchase(item: {
     gearItem: item.gearItem ?? null,
     category: item.category ?? null
   };
+}
+
+function fromApiEvent(item: {
+  id: string;
+  eventType: "PURCHASED" | "CONSUMED" | "DAMAGED" | "STATUS_CHANGED";
+  quantityDelta?: number;
+  fromStatus?: "IN_USE" | "USED_UP" | "WORN_OUT" | "STORED" | null;
+  toStatus?: "IN_USE" | "USED_UP" | "WORN_OUT" | "STORED" | null;
+  eventAt: string | Date;
+  notes?: string | null;
+  purchaseRecord?: { itemNameSnapshot?: string | null } | null;
+}) {
+  return {
+    id: item.id,
+    eventType: item.eventType,
+    quantityDelta: Number(item.quantityDelta ?? 0),
+    fromStatus: item.fromStatus ?? null,
+    toStatus: item.toStatus ?? null,
+    eventAt: item.eventAt instanceof Date ? item.eventAt.toISOString() : item.eventAt,
+    notes: item.notes ?? "",
+    itemNameSnapshot: item.purchaseRecord?.itemNameSnapshot ?? ""
+  };
+}
+
+function displayPurchaseName(item: Pick<PurchaseView, "itemNameSnapshot" | "category" | "gearItem" | "brand">) {
+  return canonicalProductName({
+    name: item.itemNameSnapshot,
+    brandName: item.brand?.name ?? "",
+    modelCode: item.gearItem?.modelCode ?? "",
+    categoryName: item.category?.name ?? ""
+  });
+}
+
+function displayBrandName(brand?: { name: string } | null) {
+  const name = canonicalOptionalBrandDisplayName(brand?.name);
+  return name || "-";
+}
+
+function displayEventName(event: GearDetailData["events"][number]) {
+  return canonicalProductName({
+    name: event.itemNameSnapshot
+  });
 }
 
 export function GearDetailEditor({
@@ -202,7 +277,7 @@ export function GearDetailEditor({
     setForm((state) => ({
       ...state,
       name: data.name ?? state.name,
-      brandName: data.brand?.name ?? "",
+      brandName: canonicalOptionalBrandDisplayName(data.brand?.name),
       categoryId: data.categoryId ?? "",
       modelCode: data.modelCode ?? "",
       coverImageUrl: data.coverImageUrl ?? "",
@@ -228,6 +303,7 @@ export function GearDetailEditor({
           scoreText: item.scoreText ?? "",
           summaryText: item.summaryText ?? ""
         })) || [],
+      events: state.events,
       purchases: (data.purchases ?? []).map(fromApiPurchase) ?? state.purchases
     }));
 
@@ -238,14 +314,14 @@ export function GearDetailEditor({
   function openPurchaseEdit(purchase: PurchaseView) {
     setEditingPurchaseId(purchase.id);
     setPurchaseForm({
-      itemNameSnapshot: purchase.itemNameSnapshot,
-      brandName: purchase.brand?.name ?? "",
+      itemNameSnapshot: displayPurchaseName(purchase),
+      brandName: canonicalOptionalBrandDisplayName(purchase.brand?.name),
       modelCode: purchase.gearItem?.modelCode ?? "",
       categoryId: purchase.categoryId ?? "",
       unitPriceCny: purchase.unitPriceCny,
       quantity: purchase.quantity,
       totalPriceCny: purchase.totalPriceCny.toString(),
-      purchaseDate: toDatetimeLocalValue(purchase.purchaseDate),
+      purchaseDate: toDateInputValue(purchase.purchaseDate),
       channel: purchase.channel ?? "",
       itemStatus: purchase.itemStatus,
       notes: purchase.notes ?? "",
@@ -270,7 +346,7 @@ export function GearDetailEditor({
       unitPriceCny: Number(purchaseForm.unitPriceCny),
       quantity: Number(purchaseForm.quantity),
       totalPriceCny: purchaseForm.totalPriceCny === "" ? null : Number(purchaseForm.totalPriceCny),
-      purchaseDate: new Date(purchaseForm.purchaseDate).toISOString(),
+      purchaseDate: toPurchaseIsoDate(purchaseForm.purchaseDate),
       channel: purchaseForm.channel || null,
       itemStatus: purchaseForm.itemStatus,
       notes: purchaseForm.notes || null,
@@ -289,10 +365,20 @@ export function GearDetailEditor({
     }
 
     const updated = await res.json();
-    setForm((state) => ({
-      ...state,
-      purchases: state.purchases.map((item) => (item.id === editingPurchaseId ? fromApiPurchase(updated) : item))
-    }));
+    const detailRes = await fetch(`/api/gear/${form.id}`);
+    if (detailRes.ok) {
+      const detail = await detailRes.json();
+      setForm((state) => ({
+        ...state,
+        purchases: (detail.purchases ?? []).map(fromApiPurchase),
+        events: (detail.events ?? []).map(fromApiEvent)
+      }));
+    } else {
+      setForm((state) => ({
+        ...state,
+        purchases: state.purchases.map((item) => (item.id === editingPurchaseId ? fromApiPurchase(updated) : item))
+      }));
+    }
     setSavingPurchase(false);
     closePurchaseEdit();
     setMessage("购买记录已同步更新");
@@ -304,11 +390,16 @@ export function GearDetailEditor({
     return Number(purchaseForm.unitPriceCny || 0) * Number(purchaseForm.quantity || 1);
   }, [purchaseForm]);
 
+  const purchaseChannelOptions = useMemo(
+    () => getPurchaseChannelOptions(purchaseForm?.channel),
+    [purchaseForm?.channel]
+  );
+
   return (
     <div className="space-y-6">
       <SectionTitle
         title={form.name}
-        subtitle={`${form.brandName || "未知品牌"} · ${categories.find((item) => item.id === form.categoryId)?.name ?? "未分类"}`}
+        subtitle={`${canonicalOptionalBrandDisplayName(form.brandName) || "未知品牌"} · ${categories.find((item) => item.id === form.categoryId)?.name ?? "未分类"}`}
       />
 
       <Card>
@@ -431,6 +522,44 @@ export function GearDetailEditor({
               }))
             }
           />
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-display text-lg text-neon">生命周期记录</h2>
+        <div className="mt-4 space-y-3">
+          {form.events.map((event) => (
+            <div
+              key={event.id}
+              className="rounded-2xl border border-[color:var(--glass-border)] bg-panel-2 px-4 py-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`font-display text-base ${eventTone(event.eventType)}`}>
+                    {EVENT_LABELS[event.eventType]}
+                  </span>
+                  {event.quantityDelta !== 0 ? (
+                    <span className="rounded-full border border-border px-2 py-0.5 text-xs text-text-mute">
+                      {event.quantityDelta > 0 ? `+${event.quantityDelta}` : event.quantityDelta}
+                    </span>
+                  ) : null}
+                  {event.fromStatus || event.toStatus ? (
+                    <span className="text-xs text-text-mute">
+                      {(event.fromStatus ? STATUS_LABELS[event.fromStatus] : "未记录") +
+                        " → " +
+                        (event.toStatus ? STATUS_LABELS[event.toStatus] : "未记录")}
+                    </span>
+                  ) : null}
+                </div>
+                <span className="text-xs text-text-mute">{dateText(event.eventAt)}</span>
+              </div>
+              {event.itemNameSnapshot ? (
+                <div className="mt-1 text-sm text-text">{displayEventName(event)}</div>
+              ) : null}
+              {event.notes ? <div className="mt-1 text-xs text-text-mute">{event.notes}</div> : null}
+            </div>
+          ))}
+          {!form.events.length ? <p className="text-sm text-mute">暂无生命周期记录</p> : null}
         </div>
       </Card>
 
@@ -565,9 +694,9 @@ export function GearDetailEditor({
               {form.purchases.map((purchase) => (
                 <tr key={purchase.id} className="border-t border-[color:var(--glass-border)]">
                   <td className="py-2 text-mute">{dateText(purchase.purchaseDate)}</td>
-                  <td className="py-2">{purchase.itemNameSnapshot}</td>
+                  <td className="py-2">{displayPurchaseName(purchase)}</td>
                   <td className="py-2">{purchase.gearItem?.modelCode ?? "-"}</td>
-                  <td className="py-2">{purchase.brand?.name ?? "-"}</td>
+                  <td className="py-2">{displayBrandName(purchase.brand)}</td>
                   <td className="py-2">{purchase.category?.name ?? "-"}</td>
                   <td className="py-2">{STATUS_LABELS[purchase.itemStatus]}</td>
                   <td className="py-2 text-right">{purchase.quantity}</td>
@@ -688,7 +817,7 @@ export function GearDetailEditor({
               <div>
                 <label className="mb-1 block text-xs uppercase tracking-widest text-mute">购买日期</label>
                 <Input
-                  type="datetime-local"
+                  type="date"
                   value={purchaseForm.purchaseDate}
                   onChange={(event) =>
                     setPurchaseForm((state) => (state ? { ...state, purchaseDate: event.target.value } : state))
@@ -716,13 +845,19 @@ export function GearDetailEditor({
               </div>
               <div>
                 <label className="mb-1 block text-xs uppercase tracking-widest text-mute">渠道</label>
-                <Input
+                <Select
                   value={purchaseForm.channel}
                   onChange={(event) =>
                     setPurchaseForm((state) => (state ? { ...state, channel: event.target.value } : state))
                   }
-                  placeholder="京东 / 拼多多 / 线下"
-                />
+                >
+                  <option value="">未填写</option>
+                  {purchaseChannelOptions.map((channel) => (
+                    <option key={channel} value={channel}>
+                      {channel}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div className="xl:col-span-4">
                 <label className="mb-1 block text-xs uppercase tracking-widest text-mute">备注</label>

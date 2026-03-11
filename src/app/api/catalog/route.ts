@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import { canonicalProductKey, canonicalProductName } from "@/lib/business-rules";
 import { HOT_GEAR_CATALOG } from "@/lib/data/hot-gear-catalog";
-import { PROJECT_GEAR_CATALOG } from "@/lib/data/project-gear-catalog";
+import { buildProjectCatalogEntries } from "@/lib/project-catalog";
 
 type CatalogItem = {
   id: string;
@@ -26,8 +27,13 @@ function normalize(value: string) {
 }
 
 function itemKey(input: { name: string; brandName?: string; modelCode?: string; categoryId?: string }) {
+  const canonicalName = canonicalProductName({
+    name: input.name,
+    brandName: input.brandName,
+    modelCode: input.modelCode
+  });
   return [
-    normalize(input.name),
+    normalize(canonicalName),
     normalize(input.brandName ?? ""),
     normalize(input.modelCode ?? ""),
     normalize(input.categoryId ?? "")
@@ -45,10 +51,15 @@ function byScore(a: CatalogItem, b: CatalogItem) {
 }
 
 function byProjectRank(a: CatalogItem, b: CatalogItem) {
-  const aRank = a.hotRank ?? 0;
-  const bRank = b.hotRank ?? 0;
-  if (aRank !== bRank) return bRank - aRank;
-  return a.name.localeCompare(b.name, "zh-Hans-CN");
+  const collator = new Intl.Collator("zh-Hans-CN");
+  const brandDiff = collator.compare(a.brandName || "", b.brandName || "");
+  if (brandDiff !== 0) return brandDiff;
+  const aPrice = typeof a.suggestedUnitPriceCny === "number" ? a.suggestedUnitPriceCny : Number.POSITIVE_INFINITY;
+  const bPrice = typeof b.suggestedUnitPriceCny === "number" ? b.suggestedUnitPriceCny : Number.POSITIVE_INFINITY;
+  if (aPrice !== bPrice) return aPrice - bPrice;
+  const modelDiff = collator.compare(a.modelCode || "", b.modelCode || "");
+  if (modelDiff !== 0) return modelDiff;
+  return collator.compare(a.name, b.name);
 }
 
 function filterByQueryAndCategory(items: CatalogItem[], query: string, categoryIdFilter: string) {
@@ -85,10 +96,11 @@ export async function GET(request: NextRequest) {
   const categoryByName = new Map(categories.map((item) => [item.name, item.id]));
   const categoryById = new Map(categories.map((item) => [item.id, item.name]));
 
-  const projectItems: CatalogItem[] = PROJECT_GEAR_CATALOG.map((item) => {
+  const overrides = await prisma.projectCatalogOverride.findMany();
+  const projectItems: CatalogItem[] = buildProjectCatalogEntries(overrides).map((item) => {
     const categoryId = categoryByName.get(item.categoryName) ?? "";
     return {
-      id: `project:${itemKey({ name: item.name, brandName: item.brandName, modelCode: item.modelCode, categoryId })}`,
+      id: `project:${item.entryKey}`,
       source: "PROJECT",
       name: item.name,
       brandName: item.brandName,
@@ -149,7 +161,11 @@ export async function GET(request: NextRequest) {
   const historyMap = new Map<string, CatalogItem>();
   for (const row of latestPurchases) {
     const key = itemKey({
-      name: row.itemNameSnapshot,
+      name: canonicalProductName({
+        name: row.itemNameSnapshot,
+        brandName: row.brand?.name ?? "",
+        modelCode: row.gearItem?.modelCode ?? ""
+      }),
       brandName: row.brand?.name ?? "",
       modelCode: row.gearItem?.modelCode ?? "",
       categoryId: row.categoryId ?? ""
@@ -160,7 +176,11 @@ export async function GET(request: NextRequest) {
       historyMap.set(key, {
         id: `history:${key}`,
         source: "HISTORY",
-        name: row.itemNameSnapshot,
+        name: canonicalProductName({
+          name: row.itemNameSnapshot,
+          brandName: row.brand?.name ?? "",
+          modelCode: row.gearItem?.modelCode ?? ""
+        }),
         brandName: row.brand?.name ?? "",
         modelCode: row.gearItem?.modelCode ?? "",
         categoryId: row.categoryId ?? "",

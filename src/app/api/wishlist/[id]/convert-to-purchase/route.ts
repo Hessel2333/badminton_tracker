@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, WishlistStatus } from "@prisma/client";
 
-import { calcTotalPrice } from "@/lib/business-rules";
+import { calcTotalPrice, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
@@ -32,9 +32,20 @@ export async function POST(request: NextRequest, context: Context) {
     }
 
     const total = calcTotalPrice(input.unitPriceCny, input.quantity, input.totalPriceCny ?? undefined);
+    const canonicalName = canonicalProductName({
+      name: wishlist.name,
+      categoryName: (
+        wishlist.categoryId
+          ? await tx.category.findUnique({
+              where: { id: wishlist.categoryId },
+              select: { name: true }
+            })
+          : null
+      )?.name ?? ""
+    });
 
     const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
-      itemNameSnapshot: wishlist.name,
+      itemNameSnapshot: canonicalName,
       brandId: wishlist.brandId,
       categoryId: wishlist.categoryId
     });
@@ -44,7 +55,7 @@ export async function POST(request: NextRequest, context: Context) {
         gearItemId,
         brandId: wishlist.brandId,
         categoryId: wishlist.categoryId,
-        itemNameSnapshot: wishlist.name,
+        itemNameSnapshot: canonicalName,
         unitPriceCny: new Prisma.Decimal(input.unitPriceCny),
         quantity: input.quantity,
         totalPriceCny: new Prisma.Decimal(total),

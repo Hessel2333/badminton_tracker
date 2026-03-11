@@ -4,6 +4,8 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 
+import { Layout } from "lucide-react";
+
 export const revalidate = 60;
 
 
@@ -12,13 +14,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <SectionTitle title="总览" subtitle="你的羽毛球投入实时雷达" />
+      <SectionTitle
+        icon={Layout}
+        title="总览"
+        subtitle="你的羽毛球投入实时雷达，数据驱动，精准反馈。"
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="本月投入" value={currency(overview.currentMonthSpend)} />
-        <StatCard label="累计投入" value={currency(overview.totalSpend)} />
-        <StatCard label="心愿单目标金额" value={currency(overview.wishlistTargetAmount)} />
-        <StatCard label="最近记录数" value={String(overview.recentPurchases.length)} />
+        <StatCard label="本月投入" value={currency(overview.currentMonthSpend)} transition={{ delay: 0.1 }} />
+        <StatCard label="累计投入" value={currency(overview.totalSpend)} transition={{ delay: 0.16 }} />
+        <StatCard label="心愿单目标金额" value={currency(overview.wishlistTargetAmount)} transition={{ delay: 0.22 }} />
+        <StatCard label="最近记录数" value={String(overview.recentPurchases.length)} transition={{ delay: 0.28 }} />
       </div>
 
       <Card>

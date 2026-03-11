@@ -13,8 +13,11 @@ export function currency(value: number | string | null | undefined) {
   }).format(Number.isFinite(num) ? num : 0);
 }
 
-export function dateText(value: string | Date) {
+export function dateText(value: string | Date | null | undefined) {
+  if (!value) return "-";
   const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return "无效日期";
+
   return new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai",
     year: "numeric",
