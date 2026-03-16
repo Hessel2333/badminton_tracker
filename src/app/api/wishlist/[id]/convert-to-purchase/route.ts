@@ -4,6 +4,7 @@ import { Prisma, WishlistStatus } from "@prisma/client";
 import { calcTotalPrice, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
 import { wishlistConvertSchema } from "@/lib/validators/wishlist";
@@ -33,12 +34,20 @@ export async function POST(request: NextRequest, context: Context) {
     }
 
     const total = calcTotalPrice(input.unitPriceCny, input.quantity, input.totalPriceCny ?? undefined);
+    const nextCategoryId = input.categoryId ?? wishlist.categoryId;
+    const nextBrandName = input.brandName?.trim() || null;
+    const brandId = nextBrandName
+      ? await findOrCreateBrandId(nextBrandName, tx)
+      : wishlist.brandId;
+    const nextModelCode = input.modelCode?.trim() || null;
     const canonicalName = canonicalProductName({
-      name: wishlist.name,
+      name: input.itemNameSnapshot?.trim() || wishlist.name,
+      brandName: nextBrandName ?? "",
+      modelCode: nextModelCode ?? "",
       categoryName: (
-        wishlist.categoryId
+        nextCategoryId
           ? await tx.category.findUnique({
-              where: { id: wishlist.categoryId },
+              where: { id: nextCategoryId },
               select: { name: true }
             })
           : null
@@ -47,21 +56,26 @@ export async function POST(request: NextRequest, context: Context) {
 
     const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
       itemNameSnapshot: canonicalName,
-      brandId: wishlist.brandId,
-      categoryId: wishlist.categoryId
+      brandName: nextBrandName,
+      brandId,
+      modelCode: nextModelCode,
+      categoryId: nextCategoryId,
+      allowAutoImageLookup: !input.gearCoverImageUrl,
+      coverImageUrl: input.gearCoverImageUrl ?? wishlist.imageUrl
     });
 
     const purchase = await tx.purchaseRecord.create({
       data: {
         gearItemId,
-        brandId: wishlist.brandId,
-        categoryId: wishlist.categoryId,
+        brandId,
+        categoryId: nextCategoryId,
         itemNameSnapshot: canonicalName,
         unitPriceCny: new Prisma.Decimal(input.unitPriceCny),
         quantity: input.quantity,
         totalPriceCny: new Prisma.Decimal(total),
         purchaseDate: new Date(input.purchaseDate),
         channel: input.channel ?? null,
+        itemStatus: input.itemStatus,
         isSecondHand: input.isSecondHand ?? false,
         notes: input.notes ?? wishlist.notes,
         receiptImageUrl: wishlist.imageUrl

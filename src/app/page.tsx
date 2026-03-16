@@ -9,19 +9,16 @@ import { BrandMark } from "@/components/entry/BrandMark";
 
 const archiveModes = [
   {
-    index: "01",
-    title: "录入",
-    detail: "先从项目装备库挑型号，再补价格、数量与渠道，把碎片消费整理成结构化记录。"
+    title: "装备墙",
+    detail: "先回看你现在拥有什么、各自是什么状态。"
   },
   {
-    index: "02",
-    title: "陈列",
-    detail: "装备墙和洞洞板不是装饰页，它们负责把你的偏好、状态与收藏轨迹直接视觉化。"
+    title: "洞洞板",
+    detail: "同一批装备切换到更偏陈列与偏好的观察方式。"
   },
   {
-    index: "03",
-    title: "复盘",
-    detail: "趋势、品牌占比、频率与评分排行帮助你判断下一次该买什么，哪些值得继续投入。"
+    title: "分析看板",
+    detail: "趋势、频率和占比帮助你判断下一次该买什么。"
   }
 ];
 
@@ -241,66 +238,34 @@ export default async function HomePage() {
 
         <section
           id="archive-modes"
-          className="grid gap-8 border-t border-[color:var(--border)] py-12 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:py-16"
+          className="grid gap-8 border-t border-[color:var(--border)] py-12 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-end lg:py-16"
         >
-          <div className="max-w-[30rem]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-mute)]">
-              Why This Homepage
-            </div>
-            <h2 className="mt-4 max-w-[10ch] font-display text-[clamp(2.5rem,6vw,4.75rem)] leading-[0.95] tracking-[-0.07em] text-text">
-              首页先讲清楚这不是普通记账。
-            </h2>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-[30px] border border-[var(--border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--accent)_6%,var(--panel-2))_0%,color-mix(in_srgb,var(--accent)_2%,var(--bg))_100%)] p-6">
-              <p className="text-sm leading-8 text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
-                对装备党来说，价值不只在拥有，还在于能回看自己的选择逻辑。为什么复购这桶球，为什么这双鞋只穿了三个月，为什么某支拍子明明贵却仍值得留下，这些都该有证据。
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {archiveModes.map((mode) => (
-                <div
-                  key={mode.index}
-                  className="grid gap-3 border-b border-[color:var(--border)] pb-4 last:border-b-0 last:pb-0 md:grid-cols-[72px_1fr]"
-                >
-                  <div className="font-display text-[2rem] leading-none tracking-[-0.06em] text-[color:color-mix(in_srgb,var(--accent)_76%,var(--text)_24%)]">
-                    {mode.index}
-                  </div>
-                  <div>
-                    <h3 className="text-[1.05rem] font-medium tracking-[-0.035em] text-text">{mode.title}</h3>
-                    <p className="mt-1.5 text-sm leading-7 text-[color:var(--text-mute)]">{mode.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-t border-[color:var(--border)] py-12 lg:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] lg:items-end">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-mute)]">
-                Entry Prompt
-              </div>
-              <h2 className="mt-4 max-w-[12ch] font-display text-[clamp(2.2rem,5vw,4.1rem)] leading-[0.96] tracking-[-0.065em] text-text">
-                如果你已经在认真买装备，就值得有一套像样的记录界面。
-              </h2>
-            </div>
-
-            <div className="flex flex-col items-start gap-4 rounded-[32px] border border-[color:color-mix(in_srgb,var(--accent)_20%,var(--border))] bg-[linear-gradient(140deg,color-mix(in_srgb,var(--accent)_82%,#12353b)_0%,color-mix(in_srgb,var(--accent-dark)_88%,#0f2d33)_100%)] p-7 text-[rgba(244,249,247,0.94)] shadow-[0_24px_56px_rgba(17,53,61,0.22)]">
-              <p className="max-w-[24rem] text-sm leading-7 text-[rgba(232,240,238,0.82)]">
-                进入后，你会看到的是一张属于自己的羽球工作台，而不是任何人都长得一样的管理后台。
-              </p>
-              <Link
-                href="/login"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[rgba(245,248,247,0.94)] px-5 text-sm font-medium text-[#12353b] transition-transform duration-200 hover:-translate-y-0.5"
+          <div className="grid gap-4 md:grid-cols-3">
+            {archiveModes.map((mode) => (
+              <div
+                key={mode.title}
+                className="rounded-[28px] border border-[color:color-mix(in_srgb,var(--accent)_10%,var(--border))] bg-[color:color-mix(in_srgb,var(--panel-3)_84%,white)] p-5"
               >
-                现在进入
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-mute)]">
+                  Core Module
+                </div>
+                <h3 className="mt-3 text-[1.1rem] font-medium tracking-[-0.035em] text-text">{mode.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-[color:var(--text-mute)]">{mode.detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col items-start gap-4 rounded-[32px] border border-[color:color-mix(in_srgb,var(--accent)_20%,var(--border))] bg-[linear-gradient(140deg,color-mix(in_srgb,var(--accent)_82%,#12353b)_0%,color-mix(in_srgb,var(--accent-dark)_88%,#0f2d33)_100%)] p-7 text-[rgba(244,249,247,0.94)] shadow-[0_24px_56px_rgba(17,53,61,0.22)]">
+            <p className="max-w-[24rem] text-sm leading-7 text-[rgba(232,240,238,0.82)]">
+              登录后先回看档案状态，再决定是继续整理陈列，还是去分析看板做判断。
+            </p>
+            <Link
+              href="/login"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[rgba(245,248,247,0.94)] px-5 text-sm font-medium text-[#12353b] transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              现在进入
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </section>
       </div>

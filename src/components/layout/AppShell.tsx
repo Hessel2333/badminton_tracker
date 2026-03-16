@@ -10,7 +10,6 @@ import {
   BookText,
   ShieldCheck,
   GalleryHorizontal,
-  Heart,
   BarChart3,
   Settings,
   LogOut,
@@ -24,11 +23,10 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard },
-  { href: "/purchases", label: "新增购买", icon: Receipt },
+  { href: "/purchases", label: "项目装备库", icon: Receipt },
   { href: "/purchases/ledger", label: "购买台账", icon: BookText },
   { href: "/gear-wall", label: "装备墙", icon: ShieldCheck },
   { href: "/gear-board", label: "洞洞板", icon: GalleryHorizontal },
-  { href: "/wishlist", label: "心愿单", icon: Heart },
   { href: "/analytics", label: "分析看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
 ];

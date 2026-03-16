@@ -31,7 +31,7 @@ export function Button({ className, variant = "primary", size = "md", ...props }
       whileHover={{ scale: 1.008 }}
       transition={{ type: "spring", stiffness: 360, damping: 28 }}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium tracking-[-0.01em] transition-[background,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/12 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex max-w-full items-center justify-center gap-2 whitespace-nowrap text-center leading-[1.1] font-medium tracking-[-0.01em] transition-[background,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/12 disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         sizes[size],
         className

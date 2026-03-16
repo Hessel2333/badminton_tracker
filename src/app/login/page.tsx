@@ -71,37 +71,26 @@ export default function LoginPage() {
             <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-mute)]">
               Private Archive Login
             </div>
-            <h1 className="mt-4 max-w-[10ch] font-display text-[clamp(2.7rem,6vw,4.95rem)] leading-[0.94] tracking-[-0.07em] text-text">
+            <h1 className="mt-4 max-w-[9ch] font-display text-[clamp(2.45rem,5vw,4.3rem)] leading-[0.95] tracking-[-0.07em] text-text">
               登录后继续维护你的羽球轨迹。
             </h1>
-            <p className="mt-5 max-w-[29rem] text-[15px] leading-8 text-[color:color-mix(in_srgb,var(--text)_74%,var(--text-mute)_26%)] md:text-[16px]">
-              进入后看到的不是普通管理后台，而是一张围绕装备档案、陈列视角和复盘判断组织起来的个人工作台。
+            <p className="mt-5 max-w-[27rem] text-[15px] leading-8 text-[color:color-mix(in_srgb,var(--text)_74%,var(--text-mute)_26%)] md:text-[16px]">
+              进入后先看档案状态，再去装备墙、洞洞板和分析看板继续整理。
             </p>
           </div>
 
-          <div className="mt-10 flex flex-col gap-5">
-            <div className="rounded-[28px] border border-[color:color-mix(in_srgb,var(--accent)_10%,var(--border))] bg-[color:color-mix(in_srgb,var(--panel-3)_86%,white)] p-5 shadow-[0_14px_32px_rgba(17,53,61,0.06)]">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-mute)]">
-                登录后可见
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="flex items-center gap-3 rounded-[18px] bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-3.5 py-3">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-                  <div className="text-sm text-[color:color-mix(in_srgb,var(--text)_90%,var(--text-mute)_10%)]">装备档案：价格、状态、评分与时间线</div>
-                </div>
-                <div className="flex items-center gap-3 rounded-[18px] bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-3.5 py-3">
-                  <GalleryHorizontal className="h-4 w-4 shrink-0 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-                  <div className="text-sm text-[color:color-mix(in_srgb,var(--text)_90%,var(--text-mute)_10%)]">洞洞板陈列：把装备当作藏品目录整理</div>
-                </div>
-                <div className="flex items-center gap-3 rounded-[18px] bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-3.5 py-3">
-                  <BarChart3 className="h-4 w-4 shrink-0 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-                  <div className="text-sm text-[color:color-mix(in_srgb,var(--text)_90%,var(--text-mute)_10%)]">分析复盘：趋势、频率和排行帮助下一次判断</div>
-                </div>
-              </div>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
+              <ShieldCheck className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
+              装备墙：先看状态
             </div>
-
-            <div className="max-w-[28rem] border-l border-[color:color-mix(in_srgb,var(--accent)_24%,var(--border))] pl-4 text-sm leading-7 text-[color:color-mix(in_srgb,var(--text)_74%,var(--text-mute)_26%)]">
-              数据为判断服务，不为堆砌而存在。每一条记录都应该解释一次偏好、一件装备状态，或一次长期投入的变化。
+            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
+              <GalleryHorizontal className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
+              洞洞板：再看陈列
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
+              <BarChart3 className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
+              分析看板：最后做判断
             </div>
           </div>
         </section>

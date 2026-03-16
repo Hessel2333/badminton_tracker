@@ -9,7 +9,7 @@ export default function WishlistPage() {
       <SectionTitle
         icon={Heart}
         title="心愿单"
-        subtitle="标记尚未入手的梦想装备，静待良机，一键转为羽迹，记录成长轨迹。"
+        subtitle="集中查看从装备库加入的待观察项目，等真正入手后再转成购买记录。"
       />
       <WishlistManager />
     </div>

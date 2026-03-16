@@ -130,7 +130,8 @@ export async function GET(request: NextRequest) {
         gearItem: {
           select: {
             id: true,
-            modelCode: true
+            modelCode: true,
+            coverImageUrl: true
           }
         },
         category: {

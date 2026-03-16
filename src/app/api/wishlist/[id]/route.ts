@@ -61,3 +61,16 @@ export async function PUT(request: NextRequest, context: Context) {
 
   return NextResponse.json(item);
 }
+
+export async function DELETE(_: NextRequest, context: Context) {
+  const auth = await requireSession();
+  if ("error" in auth) return auth.error;
+
+  const { id } = await context.params;
+
+  await prisma.wishlistItem.delete({
+    where: { id }
+  });
+
+  return NextResponse.json({ ok: true });
+}

@@ -29,28 +29,6 @@ export default async function GearDetailPage({ params }: Props) {
         category: {
           select: { name: true }
         },
-        ratings: {
-          orderBy: { ratedAt: "desc" },
-          take: 1,
-          select: {
-            power: true,
-            control: true,
-            durability: true,
-            comfort: true,
-            value: true,
-            overall: true,
-            reviewText: true
-          }
-        },
-        externalViews: {
-          orderBy: { capturedAt: "desc" },
-          select: {
-            sourceName: true,
-            sourceUrl: true,
-            scoreText: true,
-            summaryText: true
-          }
-        },
         purchases: {
           orderBy: { purchaseDate: "desc" },
           take: 120,
@@ -110,8 +88,6 @@ export default async function GearDetailPage({ params }: Props) {
     notFound();
   }
 
-  const latestRating = item.ratings[0];
-
   return (
     <GearDetailEditor
       categories={categories.map((category) => ({
@@ -132,21 +108,6 @@ export default async function GearDetailPage({ params }: Props) {
         coverImageUrl: item.coverImageUrl ?? "",
         notes: item.notes ?? "",
         createdAt: item.createdAt.toISOString(),
-        rating: {
-          power: latestRating ? toNumber(latestRating.power) : 0,
-          control: latestRating ? toNumber(latestRating.control) : 0,
-          durability: latestRating ? toNumber(latestRating.durability) : 0,
-          comfort: latestRating ? toNumber(latestRating.comfort) : 0,
-          value: latestRating ? toNumber(latestRating.value) : 0,
-          overall: latestRating ? toNumber(latestRating.overall) : 0,
-          reviewText: latestRating?.reviewText ?? ""
-        },
-        externalReviews: item.externalViews.map((review) => ({
-          sourceName: review.sourceName,
-          sourceUrl: review.sourceUrl,
-          scoreText: review.scoreText ?? "",
-          summaryText: review.summaryText ?? ""
-        })),
         events: item.events.map((event) => ({
           id: event.id,
           eventType: event.eventType,
