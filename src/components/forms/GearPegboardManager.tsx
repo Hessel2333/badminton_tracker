@@ -45,7 +45,7 @@ type ImageMetrics = {
 };
 
 const STORAGE_KEY = "gear-board-layout-v12";
-const LAYOUT_VERSION = 11;
+const LAYOUT_VERSION = 12;
 const DESKTOP_BOARD_MIN_HEIGHT = 960;
 const WHITE_BG_THRESHOLD = 246;
 
@@ -274,6 +274,16 @@ function fitScaleToBoard(
   );
 }
 
+function recommendedLayoutScale(
+  instanceWidth: number,
+  instanceHeight: number,
+  rotateDeg: number,
+  boardWidth: number,
+  boardHeight: number
+) {
+  return Math.min(1, fitScaleToBoard(instanceWidth, instanceHeight, rotateDeg, boardWidth, boardHeight));
+}
+
 function clampSlot(slot: LayoutSlot, instance: BoardInstance, boardWidth: number, boardHeight: number): LayoutSlot {
   const padding = boardPadding(boardWidth);
   const rotate = clamp(slot.rotate, -90, 90);
@@ -340,7 +350,7 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
   let z = 2;
 
   for (const instance of shuttleInstances) {
-    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const scale = recommendedLayoutScale(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
@@ -372,7 +382,7 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
   rowHeight = 0;
 
   for (const instance of racketInstances) {
-    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const scale = recommendedLayoutScale(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
@@ -446,7 +456,7 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
   };
 
   for (const instance of shoesInstances) {
-    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const scale = recommendedLayoutScale(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
@@ -477,7 +487,7 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
   rowHeight = 0;
 
   for (const instance of otherInstances) {
-    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const scale = recommendedLayoutScale(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
