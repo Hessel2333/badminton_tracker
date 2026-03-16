@@ -1,0 +1,105 @@
+:root {
+  --colorNeutralBackground1: #ffffff;
+  --colorNeutralBackground2: #f5f5f5;
+  --colorNeutralBackground3: #f0f0f0;
+  --colorNeutralForeground1: #242424;
+  --colorNeutralForeground2: #616161;
+  --colorNeutralStroke1: #d1d1d1;
+  --colorBrandBackground: #0f6cbd;
+  --colorBrandForeground1: #115ea3;
+  --shadow4: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow16: 0 8px 28px rgba(0, 0, 0, 0.14);
+  --borderRadiusMedium: 8px;
+  --borderRadiusLarge: 12px;
+  --borderRadiusXLarge: 16px;
+  --spacingHorizontalL: 20px;
+  --spacingHorizontalXL: 24px;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #fafafa 0%, #f3f3f3 100%);
+  color: var(--colorNeutralForeground1);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: rgba(255, 255, 255, 0.78);
+  border-right: 1px solid var(--colorNeutralStroke1);
+  backdrop-filter: blur(12px);
+  padding: var(--spacingHorizontalXL);
+}
+
+.header,
+.panel,
+.card {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow4);
+}
+
+.main {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--borderRadiusXLarge);
+  padding: 16px 20px;
+}
+
+.content-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.panel,
+.card {
+  border-radius: var(--borderRadiusLarge);
+  padding: 20px;
+}
+
+.button-primary {
+  border: 0;
+  border-radius: var(--borderRadiusMedium);
+  padding: 10px 16px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--colorBrandBackground);
+}
+
+.button-subtle {
+  border: 1px solid var(--colorNeutralStroke1);
+  border-radius: var(--borderRadiusMedium);
+  padding: 10px 16px;
+  background: var(--colorNeutralBackground1);
+  color: var(--colorNeutralForeground1);
+}
+
+.eyebrow {
+  color: var(--colorBrandForeground1);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metric {
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.secondary {
+  color: var(--colorNeutralForeground2);
+}

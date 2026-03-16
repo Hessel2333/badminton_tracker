@@ -32,7 +32,7 @@ export function SegmentedControl({
     return (
         <div
             className={cn(
-                "relative flex rounded-2xl bg-panel/60 p-1",
+                "relative flex rounded-full border border-[var(--border)] bg-[color:var(--panel)] p-1 shadow-[inset_0_1px_0_var(--glass-border)] backdrop-blur-2xl",
                 fullWidth ? "w-full" : "w-fit",
                 className
             )}
@@ -46,10 +46,10 @@ export function SegmentedControl({
                         type="button"
                         onClick={() => onChange(option.id)}
                         className={cn(
-                            "relative z-10 flex items-center justify-center gap-2 rounded-xl transition-colors duration-200",
-                            size === "sm" ? "px-2.5 py-0.5 text-xs" : "px-4 py-1 text-sm",
+                            "relative z-10 flex items-center justify-center gap-2 rounded-full transition-colors duration-200",
+                            size === "sm" ? "px-3 py-1 text-xs" : "px-4.5 py-1.5 text-sm",
                             fullWidth ? "flex-1" : "min-w-[80px]",
-                            isActive ? "text-accent font-semibold" : "text-text-mute hover:text-text"
+                            isActive ? "text-text font-semibold" : "text-text-mute hover:text-text"
                         )}
                     >
                         {option.icon && <span className="shrink-0">{option.icon}</span>}
@@ -58,7 +58,7 @@ export function SegmentedControl({
                         {isActive && (
                             <motion.div
                                 layoutId={`segmented-active-${segmentedLayoutId}`}
-                                className="absolute inset-0 z-0 rounded-xl bg-panel shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-white/10"
+                                className="absolute inset-0 z-0 rounded-full border border-[var(--border)] bg-[color:var(--panel-3)] shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
                                 transition={{
                                     type: "spring",
                                     stiffness: 400,

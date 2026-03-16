@@ -5,6 +5,7 @@ import { calcTotalPrice, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
+import { createPurchaseEvent } from "@/lib/server/purchase-events";
 import { wishlistConvertSchema } from "@/lib/validators/wishlist";
 
 type Context = {
@@ -65,6 +66,14 @@ export async function POST(request: NextRequest, context: Context) {
         notes: input.notes ?? wishlist.notes,
         receiptImageUrl: wishlist.imageUrl
       }
+    });
+    await createPurchaseEvent(tx, {
+      purchaseRecordId: purchase.id,
+      gearItemId: purchase.gearItemId,
+      eventType: "PURCHASED",
+      quantityDelta: purchase.quantity,
+      toStatus: purchase.itemStatus,
+      eventAt: purchase.purchaseDate
     });
 
     const previousStatus = wishlist.status;

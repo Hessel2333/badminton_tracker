@@ -87,44 +87,64 @@ export async function PUT(request: NextRequest) {
     categoryName: input.categoryName
   });
 
-  const saved = await prisma.$transaction(async (tx) => {
-    if (input.entryKey !== nextEntryKey) {
-      await tx.projectCatalogOverride.deleteMany({
-        where: {
-          entryKey: {
-            in: [input.entryKey, nextEntryKey]
-          }
+  try {
+    const saved = await prisma.$transaction(async (tx) => {
+      if (input.entryKey !== nextEntryKey) {
+        const conflict = await tx.projectCatalogOverride.findUnique({
+          where: { entryKey: nextEntryKey },
+          select: { id: true }
+        });
+        if (conflict) {
+          throw new Error("ENTRY_KEY_CONFLICT");
+        }
+      }
+
+      const upserted = await tx.projectCatalogOverride.upsert({
+        where: { entryKey: nextEntryKey },
+        update: {
+          name: input.name,
+          brandName: input.brandName,
+          modelCode: input.modelCode ?? null,
+          categoryName: input.categoryName,
+          suggestedUnitPriceCny:
+            input.suggestedUnitPriceCny == null ? null : new Prisma.Decimal(input.suggestedUnitPriceCny),
+          popularity: input.popularity,
+          imageUrl: input.imageUrl || null,
+          tagsJson: input.tags
+        },
+        create: {
+          entryKey: nextEntryKey,
+          name: input.name,
+          brandName: input.brandName,
+          modelCode: input.modelCode ?? null,
+          categoryName: input.categoryName,
+          suggestedUnitPriceCny:
+            input.suggestedUnitPriceCny == null ? null : new Prisma.Decimal(input.suggestedUnitPriceCny),
+          popularity: input.popularity,
+          imageUrl: input.imageUrl || null,
+          tagsJson: input.tags
         }
       });
-    }
 
-    return tx.projectCatalogOverride.upsert({
-      where: { entryKey: nextEntryKey },
-      update: {
-        name: input.name,
-        brandName: input.brandName,
-        modelCode: input.modelCode ?? null,
-        categoryName: input.categoryName,
-        suggestedUnitPriceCny:
-          input.suggestedUnitPriceCny == null ? null : new Prisma.Decimal(input.suggestedUnitPriceCny),
-        popularity: input.popularity,
-        imageUrl: input.imageUrl || null,
-        tagsJson: input.tags
-      },
-      create: {
-        entryKey: nextEntryKey,
-        name: input.name,
-        brandName: input.brandName,
-        modelCode: input.modelCode ?? null,
-        categoryName: input.categoryName,
-        suggestedUnitPriceCny:
-          input.suggestedUnitPriceCny == null ? null : new Prisma.Decimal(input.suggestedUnitPriceCny),
-        popularity: input.popularity,
-        imageUrl: input.imageUrl || null,
-        tagsJson: input.tags
+      if (input.entryKey !== nextEntryKey) {
+        await tx.projectCatalogOverride.deleteMany({
+          where: {
+            entryKey: input.entryKey
+          }
+        });
       }
-    });
-  });
 
-  return NextResponse.json(saved);
+      return upserted;
+    });
+
+    return NextResponse.json(saved);
+  } catch (error) {
+    if ((error as Error).message === "ENTRY_KEY_CONFLICT") {
+      return NextResponse.json({ error: "目标条目已存在，请先合并后再修改。" }, { status: 409 });
+    }
+    return NextResponse.json(
+      { error: "保存项目装备库失败", detail: (error as Error).message },
+      { status: 500 }
+    );
+  }
 }

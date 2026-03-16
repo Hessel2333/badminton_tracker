@@ -15,7 +15,7 @@ export function Card({ children, className, entryAnimation = true, ...props }: C
       animate={entryAnimation ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "card-gradient rounded-3xl p-6",
+        "card-gradient rounded-[28px] p-6 md:p-7",
         className
       )}
       {...props}

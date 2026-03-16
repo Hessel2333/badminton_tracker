@@ -1,0 +1,112 @@
+:root {
+  --ant-primary: #1677ff;
+  --ant-success: #52c41a;
+  --ant-bg: #f5f7fa;
+  --ant-surface: rgba(255, 255, 255, 0.88);
+  --ant-surface-strong: #ffffff;
+  --ant-text: rgba(0, 0, 0, 0.88);
+  --ant-text-secondary: rgba(0, 0, 0, 0.58);
+  --ant-border: rgba(5, 5, 5, 0.08);
+  --ant-shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.08);
+  --ant-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --ant-radius: 14px;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(22, 119, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, #f7f9fc 0%, #f1f4f8 100%);
+  color: var(--ant-text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.topbar,
+.sider,
+.block,
+.table-card,
+.stat-card {
+  background: var(--ant-surface);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--ant-border);
+  box-shadow: var(--ant-shadow-sm);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 18px;
+  padding: 14px 18px;
+}
+
+.layout {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.sider {
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.main {
+  display: grid;
+  gap: 16px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card,
+.block,
+.table-card {
+  border-radius: var(--ant-radius);
+  padding: 18px 20px;
+}
+
+.button-primary {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(180deg, #4096ff 0%, var(--ant-primary) 100%);
+}
+
+.button-default {
+  border: 1px solid var(--ant-border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.06);
+}
+
+.data-table th {
+  text-align: left;
+  color: var(--ant-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}

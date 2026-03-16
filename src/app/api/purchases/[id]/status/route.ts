@@ -29,13 +29,7 @@ export async function PATCH(request: NextRequest, context: Context) {
   try {
     const updated = await prisma.$transaction(async (tx) => {
       const existing = await tx.purchaseRecord.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          gearItemId: true,
-          quantity: true,
-          itemStatus: true
-        }
+        where: { id }
       });
 
       if (!existing) {
@@ -43,7 +37,11 @@ export async function PATCH(request: NextRequest, context: Context) {
       }
 
       const nextStatus = parsed.data.itemStatus;
-      const nextUsedUpAt = nextStatus === "USED_UP" ? new Date() : null;
+      if (existing.itemStatus === nextStatus) {
+        return existing;
+      }
+
+      const nextUsedUpAt = nextStatus === "USED_UP" ? existing.usedUpAt ?? new Date() : null;
       const updatedRecord = await tx.purchaseRecord.update({
         where: { id },
         data: {

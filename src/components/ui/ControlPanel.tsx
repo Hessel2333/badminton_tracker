@@ -12,8 +12,8 @@ export function ControlPanel({ children, className, left, right }: ControlPanelP
     return (
         <div
             className={cn(
-                "mb-4 flex flex-wrap items-center justify-between gap-4 rounded-[28px] border border-border bg-panel/60 p-1 backdrop-blur-xl shadow-sm",
-                "relative before:absolute before:inset-0 before:rounded-[28px] before:border-t before:border-white/20 before:pointer-events-none",
+                "relative mb-5 flex flex-wrap items-center justify-between gap-4 rounded-[30px] border border-[var(--border)] bg-[color:var(--panel)] p-1.5 backdrop-blur-2xl shadow-[0_16px_38px_rgba(15,23,42,0.08)]",
+                "before:pointer-events-none before:absolute before:inset-0 before:rounded-[30px] before:border before:border-white/30 before:opacity-50",
                 className
             )}
         >

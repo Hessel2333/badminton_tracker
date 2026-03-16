@@ -134,6 +134,11 @@ type BackupPayload = {
   }>;
 };
 
+function mapForeignId(sourceId: string | null | undefined, idMap: Map<string, string>) {
+  if (!sourceId) return null;
+  return idMap.get(sourceId) ?? sourceId;
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
@@ -142,49 +147,53 @@ export async function POST(request: NextRequest) {
     const payload = (await request.json()) as BackupPayload;
 
     await prisma.$transaction(async (tx) => {
+      const brandIdMap = new Map<string, string>();
+      const categoryIdMap = new Map<string, string>();
+      const gearIdMap = new Map<string, string>();
+      const purchaseIdMap = new Map<string, string>();
+      const wishlistIdMap = new Map<string, string>();
+
       for (const brand of payload.brands ?? []) {
-        await tx.brand.upsert({
-          where: { id: brand.id },
+        const saved = await tx.brand.upsert({
+          where: { normalizedName: brand.normalizedName },
           update: {
             name: brand.name,
-            normalizedName: brand.normalizedName,
             createdAt: new Date(brand.createdAt)
           },
           create: {
-            id: brand.id,
             name: brand.name,
             normalizedName: brand.normalizedName,
             createdAt: new Date(brand.createdAt)
           }
         });
+        brandIdMap.set(brand.id, saved.id);
       }
 
       for (const category of payload.categories ?? []) {
-        await tx.category.upsert({
-          where: { id: category.id },
+        const saved = await tx.category.upsert({
+          where: { name: category.name },
           update: {
-            name: category.name,
             isSystem: category.isSystem,
             sortOrder: category.sortOrder,
             createdAt: new Date(category.createdAt)
           },
           create: {
-            id: category.id,
             name: category.name,
             isSystem: category.isSystem,
             sortOrder: category.sortOrder,
             createdAt: new Date(category.createdAt)
           }
         });
+        categoryIdMap.set(category.id, saved.id);
       }
 
       for (const gear of payload.gear ?? []) {
-        await tx.gearItem.upsert({
+        const saved = await tx.gearItem.upsert({
           where: { id: gear.id },
           update: {
             name: gear.name,
-            brandId: gear.brandId,
-            categoryId: gear.categoryId,
+            brandId: mapForeignId(gear.brandId, brandIdMap),
+            categoryId: mapForeignId(gear.categoryId, categoryIdMap),
             modelCode: gear.modelCode,
             specJson: gear.specJson ?? undefined,
             coverImageUrl: gear.coverImageUrl,
@@ -194,8 +203,8 @@ export async function POST(request: NextRequest) {
           create: {
             id: gear.id,
             name: gear.name,
-            brandId: gear.brandId,
-            categoryId: gear.categoryId,
+            brandId: mapForeignId(gear.brandId, brandIdMap),
+            categoryId: mapForeignId(gear.categoryId, categoryIdMap),
             modelCode: gear.modelCode,
             specJson: gear.specJson ?? undefined,
             coverImageUrl: gear.coverImageUrl,
@@ -203,15 +212,16 @@ export async function POST(request: NextRequest) {
             createdAt: new Date(gear.createdAt)
           }
         });
+        gearIdMap.set(gear.id, saved.id);
       }
 
       for (const purchase of payload.purchases ?? []) {
-        await tx.purchaseRecord.upsert({
+        const saved = await tx.purchaseRecord.upsert({
           where: { id: purchase.id },
           update: {
-            gearItemId: purchase.gearItemId,
-            brandId: purchase.brandId,
-            categoryId: purchase.categoryId,
+            gearItemId: mapForeignId(purchase.gearItemId, gearIdMap),
+            brandId: mapForeignId(purchase.brandId, brandIdMap),
+            categoryId: mapForeignId(purchase.categoryId, categoryIdMap),
             itemNameSnapshot: purchase.itemNameSnapshot,
             unitPriceCny: new Prisma.Decimal(purchase.unitPriceCny),
             quantity: purchase.quantity,
@@ -227,9 +237,9 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: purchase.id,
-            gearItemId: purchase.gearItemId,
-            brandId: purchase.brandId,
-            categoryId: purchase.categoryId,
+            gearItemId: mapForeignId(purchase.gearItemId, gearIdMap),
+            brandId: mapForeignId(purchase.brandId, brandIdMap),
+            categoryId: mapForeignId(purchase.categoryId, categoryIdMap),
             itemNameSnapshot: purchase.itemNameSnapshot,
             unitPriceCny: new Prisma.Decimal(purchase.unitPriceCny),
             quantity: purchase.quantity,
@@ -244,14 +254,15 @@ export async function POST(request: NextRequest) {
             createdAt: new Date(purchase.createdAt)
           }
         });
+        purchaseIdMap.set(purchase.id, saved.id);
       }
 
       for (const event of payload.events ?? []) {
         await tx.purchaseEvent.upsert({
           where: { id: event.id },
           update: {
-            purchaseRecordId: event.purchaseRecordId,
-            gearItemId: event.gearItemId,
+            purchaseRecordId: mapForeignId(event.purchaseRecordId, purchaseIdMap),
+            gearItemId: mapForeignId(event.gearItemId, gearIdMap),
             eventType: event.eventType,
             quantityDelta: event.quantityDelta,
             fromStatus: event.fromStatus,
@@ -262,8 +273,8 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: event.id,
-            purchaseRecordId: event.purchaseRecordId,
-            gearItemId: event.gearItemId,
+            purchaseRecordId: mapForeignId(event.purchaseRecordId, purchaseIdMap),
+            gearItemId: mapForeignId(event.gearItemId, gearIdMap),
             eventType: event.eventType,
             quantityDelta: event.quantityDelta,
             fromStatus: event.fromStatus,
@@ -277,7 +288,7 @@ export async function POST(request: NextRequest) {
 
       for (const item of payload.projectCatalogOverrides ?? []) {
         await tx.projectCatalogOverride.upsert({
-          where: { id: item.id },
+          where: { entryKey: item.entryKey },
           update: {
             entryKey: item.entryKey,
             name: item.name,
@@ -293,7 +304,6 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(item.updatedAt)
           },
           create: {
-            id: item.id,
             entryKey: item.entryKey,
             name: item.name,
             brandName: item.brandName,
@@ -311,12 +321,12 @@ export async function POST(request: NextRequest) {
       }
 
       for (const wishlist of payload.wishlist ?? []) {
-        await tx.wishlistItem.upsert({
+        const saved = await tx.wishlistItem.upsert({
           where: { id: wishlist.id },
           update: {
             name: wishlist.name,
-            brandId: wishlist.brandId,
-            categoryId: wishlist.categoryId,
+            brandId: mapForeignId(wishlist.brandId, brandIdMap),
+            categoryId: mapForeignId(wishlist.categoryId, categoryIdMap),
             targetPriceCny:
               wishlist.targetPriceCny == null ? null : new Prisma.Decimal(wishlist.targetPriceCny),
             currentSeenPriceCny:
@@ -332,8 +342,8 @@ export async function POST(request: NextRequest) {
           create: {
             id: wishlist.id,
             name: wishlist.name,
-            brandId: wishlist.brandId,
-            categoryId: wishlist.categoryId,
+            brandId: mapForeignId(wishlist.brandId, brandIdMap),
+            categoryId: mapForeignId(wishlist.categoryId, categoryIdMap),
             targetPriceCny:
               wishlist.targetPriceCny == null ? null : new Prisma.Decimal(wishlist.targetPriceCny),
             currentSeenPriceCny:
@@ -347,25 +357,26 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(wishlist.updatedAt)
           }
         });
+        wishlistIdMap.set(wishlist.id, saved.id);
       }
 
       for (const transition of payload.transitions ?? []) {
         await tx.wishlistTransition.upsert({
           where: { id: transition.id },
           update: {
-            wishlistItemId: transition.wishlistItemId,
+            wishlistItemId: mapForeignId(transition.wishlistItemId, wishlistIdMap) ?? transition.wishlistItemId,
             fromStatus: transition.fromStatus,
             toStatus: transition.toStatus,
             changedAt: new Date(transition.changedAt),
-            linkedPurchaseId: transition.linkedPurchaseId
+            linkedPurchaseId: mapForeignId(transition.linkedPurchaseId, purchaseIdMap)
           },
           create: {
             id: transition.id,
-            wishlistItemId: transition.wishlistItemId,
+            wishlistItemId: mapForeignId(transition.wishlistItemId, wishlistIdMap) ?? transition.wishlistItemId,
             fromStatus: transition.fromStatus,
             toStatus: transition.toStatus,
             changedAt: new Date(transition.changedAt),
-            linkedPurchaseId: transition.linkedPurchaseId
+            linkedPurchaseId: mapForeignId(transition.linkedPurchaseId, purchaseIdMap)
           }
         });
       }

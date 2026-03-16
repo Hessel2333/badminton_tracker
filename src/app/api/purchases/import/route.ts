@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
+import { createPurchaseEvent } from "@/lib/server/purchase-events";
 
 function parseCSV(csv: string) {
   const rows = csv
@@ -113,6 +114,14 @@ export async function POST(request: NextRequest) {
               ? item.itemStatus
               : "IN_USE"
         }
+      });
+      await createPurchaseEvent(tx, {
+        purchaseRecordId: row.id,
+        gearItemId: row.gearItemId,
+        eventType: "PURCHASED",
+        quantityDelta: row.quantity,
+        toStatus: row.itemStatus,
+        eventAt: row.purchaseDate
       });
       results.push(row);
     }
