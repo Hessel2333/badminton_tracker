@@ -128,6 +128,24 @@ npm run test
 - 业务规则单元测试（金额、评分、品牌归一化）
 - 校验器集成测试（购买、装备、心愿转购买 payload）
 
+## Supabase 保活
+
+项目内置了两个轻量路由：
+
+- `GET /api/internal/keepalive`
+  使用 `KEEPALIVE_TOKEN` 鉴权，执行只读 SQL `SELECT 1, NOW()`，适合 GitHub Actions 定时访问以维持 Supabase 活跃度。
+- `GET /api/health`
+  Edge Runtime 的极轻量健康检查，同样使用 `KEEPALIVE_TOKEN` 鉴权，返回 `200` 和时间戳，不访问数据库。
+
+GitHub Actions 工作流位于 `.github/workflows/supabase-keepalive.yml`，当前配置为每天执行一次。
+
+需要的配置：
+
+- 仓库 Secret：`KEEPALIVE_TOKEN`
+- Vercel / 本地环境变量：`KEEPALIVE_TOKEN`
+
+本地测试上传时，还需要把 Vercel 的真实 `BLOB_READ_WRITE_TOKEN` 同步到 `.env.local`。
+
 ## 第二阶段预留
 
 数据模型已预留 `activity_sessions` 与 `APPLE_HEALTH` source，用于后续 iOS 健身羽毛球数据导入与消费联动分析。

@@ -60,9 +60,11 @@ async function main() {
       gearRatings,
       externalReviews,
       purchaseRecords,
+      purchaseEvents,
       wishlistItems,
       wishlistTransitions,
-      activitySessions
+      activitySessions,
+      projectCatalogOverrides
     ] = await Promise.all([
       source.user.findMany(),
       source.brand.findMany(),
@@ -72,19 +74,23 @@ async function main() {
       source.gearRating.findMany(),
       source.externalReview.findMany(),
       source.purchaseRecord.findMany(),
+      source.purchaseEvent.findMany(),
       source.wishlistItem.findMany(),
       source.wishlistTransition.findMany(),
-      source.activitySession.findMany()
+      source.activitySession.findMany(),
+      source.projectCatalogOverride.findMany()
     ]);
 
     await target.$transaction(async (tx) => {
       // Clear existing local data (relation-safe order)
       await tx.wishlistTransition.deleteMany();
+      await tx.purchaseEvent.deleteMany();
       await tx.externalReview.deleteMany();
       await tx.gearRating.deleteMany();
       await tx.purchaseRecord.deleteMany();
       await tx.wishlistItem.deleteMany();
       await tx.gearItem.deleteMany();
+      await tx.projectCatalogOverride.deleteMany();
       await tx.ratingDimension.deleteMany();
       await tx.brand.deleteMany();
       await tx.category.deleteMany();
@@ -112,6 +118,9 @@ async function main() {
       if (purchaseRecords.length) {
         await tx.purchaseRecord.createMany({ data: purchaseRecords });
       }
+      if (purchaseEvents.length) {
+        await tx.purchaseEvent.createMany({ data: purchaseEvents });
+      }
       if (wishlistItems.length) await tx.wishlistItem.createMany({ data: wishlistItems });
       if (wishlistTransitions.length) {
         await tx.wishlistTransition.createMany({ data: wishlistTransitions });
@@ -124,10 +133,18 @@ async function main() {
           }))
         });
       }
+      if (projectCatalogOverrides.length) {
+        await tx.projectCatalogOverride.createMany({
+          data: projectCatalogOverrides.map((item) => ({
+            ...item,
+            tagsJson: item.tagsJson === null ? Prisma.JsonNull : item.tagsJson
+          }))
+        });
+      }
     });
 
     console.log(
-      `Sync done. users=${users.length}, purchases=${purchaseRecords.length}, gear=${gearItems.length}, wishlist=${wishlistItems.length}`
+      `Sync done. users=${users.length}, purchases=${purchaseRecords.length}, purchaseEvents=${purchaseEvents.length}, gear=${gearItems.length}, wishlist=${wishlistItems.length}, catalogOverrides=${projectCatalogOverrides.length}`
     );
   } finally {
     await source.$disconnect();

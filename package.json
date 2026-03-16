@@ -16,6 +16,7 @@
     "data:sync-local-images": "tsx scripts/sync-local-gear-images.ts",
     "data:trim-cutout-images": "tsx scripts/trim-cutout-images.ts",
     "data:update-local-cover-images": "tsx scripts/update-local-cover-images.ts",
+    "data:sync-local-to-supabase": "tsx scripts/sync-local-to-supabase.ts",
     "data:sync-supabase-to-local": "tsx scripts/sync-supabase-to-local.ts",
     "data:link-purchases-to-gear": "tsx scripts/link-purchases-to-gear.ts",
     "data:backfill-purchase-events": "tsx scripts/backfill-purchase-events.ts",
