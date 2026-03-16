@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageDown, RotateCcw, Sparkles, Tag, Database, Package } from "lucide-react";
-import { toPng } from "html-to-image";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -47,13 +46,32 @@ type ImageMetrics = {
 
 const STORAGE_KEY = "gear-board-layout-v12";
 const LAYOUT_VERSION = 11;
-const BOARD_MIN_HEIGHT = 960;
-const BOARD_PADDING = 28;
-const BOARD_GAP = 24;
-const SHUTTLE_GAP_X = 8;
-const SHUTTLE_GAP_Y = 12;
-const SECTION_GAP = 38;
+const DESKTOP_BOARD_MIN_HEIGHT = 960;
 const WHITE_BG_THRESHOLD = 246;
+
+function boardMinHeight(boardWidth: number) {
+  return boardWidth < 640 ? 700 : DESKTOP_BOARD_MIN_HEIGHT;
+}
+
+function boardPadding(boardWidth: number) {
+  return boardWidth < 640 ? 16 : 28;
+}
+
+function boardGap(boardWidth: number) {
+  return boardWidth < 640 ? 14 : 24;
+}
+
+function shuttleGapX(boardWidth: number) {
+  return boardWidth < 640 ? 6 : 8;
+}
+
+function shuttleGapY(boardWidth: number) {
+  return boardWidth < 640 ? 8 : 12;
+}
+
+function sectionGap(boardWidth: number) {
+  return boardWidth < 640 ? 24 : 38;
+}
 
 function isRacketCategory(categoryName: string) {
   return categoryName.includes("球拍");
@@ -105,8 +123,13 @@ function fallbackAspectByCategory(categoryName: string) {
 }
 
 function pixelPerCm(boardWidth: number) {
-  if (boardWidth <= 0) return 7;
+  if (boardWidth <= 0) return 5.8;
+  if (boardWidth < 640) return clamp(boardWidth / 200, 3.8, 6.2);
   return clamp(boardWidth / 200, 5.8, 9.4);
+}
+
+function mobileBoardScale(boardWidth: number) {
+  return boardWidth < 640 ? 0.8 : 1;
 }
 
 function sizeByCategory(
@@ -115,7 +138,7 @@ function sizeByCategory(
   metrics: ImageMetrics | null
 ) {
   const longestCm = physicalLongestCmByCategory(categoryName);
-  const longestPx = longestCm * pixelPerCm(boardWidth || 1120);
+  const longestPx = longestCm * pixelPerCm(boardWidth || 1120) * mobileBoardScale(boardWidth || 1120);
   const rawAspect = metrics?.contentAspect ?? fallbackAspectByCategory(categoryName);
 
   let contentWidth = 0;
@@ -228,18 +251,44 @@ function footprintSize(width: number, height: number, rotateDeg: number) {
   };
 }
 
+function fitScaleToBoard(
+  instanceWidth: number,
+  instanceHeight: number,
+  rotateDeg: number,
+  boardWidth: number,
+  boardHeight: number
+) {
+  const padding = boardPadding(boardWidth);
+  const baseFootprint = footprintSize(instanceWidth, instanceHeight, rotateDeg);
+  const availableWidth = Math.max(120, boardWidth - padding * 2);
+  const availableHeight = Math.max(120, boardHeight - padding * 2);
+  const mobileScaleCap = boardWidth < 640 ? 1.15 : 2.4;
+
+  return Math.max(
+    0.28,
+    Math.min(
+      mobileScaleCap,
+      availableWidth / Math.max(1, baseFootprint.width),
+      availableHeight / Math.max(1, baseFootprint.height)
+    )
+  );
+}
+
 function clampSlot(slot: LayoutSlot, instance: BoardInstance, boardWidth: number, boardHeight: number): LayoutSlot {
-  const scale = clamp(slot.scale, 0.45, 2.4);
+  const padding = boardPadding(boardWidth);
   const rotate = clamp(slot.rotate, -90, 90);
+  const maxScale = fitScaleToBoard(instance.width, instance.height, rotate, boardWidth, boardHeight);
+  const minScale = Math.min(0.45, maxScale);
+  const scale = clamp(slot.scale, minScale, maxScale);
   const width = instance.width * scale;
   const height = instance.height * scale;
   const footprint = footprintSize(width, height, rotate);
   const protrudeX = Math.max(0, (footprint.width - width) / 2);
   const protrudeY = Math.max(0, (footprint.height - height) / 2);
-  const minX = BOARD_PADDING + protrudeX;
-  const minY = BOARD_PADDING + protrudeY;
-  const maxX = Math.max(minX, boardWidth - width - BOARD_PADDING - protrudeX);
-  const maxY = Math.max(minY, boardHeight - height - BOARD_PADDING - protrudeY);
+  const minX = padding + protrudeX;
+  const minY = padding + protrudeY;
+  const maxX = Math.max(minX, boardWidth - width - padding - protrudeX);
+  const maxY = Math.max(minY, boardHeight - height - padding - protrudeY);
 
   return {
     x: clamp(slot.x, minX, maxX),
@@ -262,6 +311,12 @@ function autoRotateForRacket(metrics: ImageMetrics | null) {
 }
 
 function recommendLayout(instances: BoardInstance[], boardWidth: number) {
+  const padding = boardPadding(boardWidth);
+  const gap = boardGap(boardWidth);
+  const shuttleXGap = shuttleGapX(boardWidth);
+  const shuttleYGap = shuttleGapY(boardWidth);
+  const zoneGap = sectionGap(boardWidth);
+  const baseBoardHeight = boardMinHeight(boardWidth);
   const slots: Record<string, LayoutSlot> = {};
   const sortedAll = [...instances].sort((a, b) => {
     const priority = categoryPriority(a.categoryName) - categoryPriority(b.categoryName);
@@ -279,53 +334,22 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
     (item) => !isShuttleCategory(item.categoryName) && !isShoesCategory(item.categoryName) && !isRacketCategory(item.categoryName)
   );
 
-  let x = BOARD_PADDING;
-  let y = BOARD_PADDING;
+  let x = padding;
+  let y = padding;
   let rowHeight = 0;
   let z = 2;
 
   for (const instance of shuttleInstances) {
-    const width = instance.width;
-    const height = instance.height;
-    const footprint = footprintSize(width, height, instance.defaultRotate);
-    const protrudeX = Math.max(0, (footprint.width - width) / 2);
-    const protrudeY = Math.max(0, (footprint.height - height) / 2);
-
-    if (x + footprint.width > boardWidth - BOARD_PADDING) {
-      x = BOARD_PADDING;
-      y += rowHeight + SHUTTLE_GAP_Y;
-      rowHeight = 0;
-    }
-
-    slots[instance.instanceId] = {
-      x: x + protrudeX,
-      y: y + protrudeY,
-      scale: 1,
-      rotate: instance.defaultRotate,
-      z: z++
-    };
-
-    x += footprint.width + SHUTTLE_GAP_X;
-    rowHeight = Math.max(rowHeight, footprint.height);
-  }
-
-  const shuttleBottom = y + rowHeight;
-  const sectionTop = shuttleInstances.length > 0 ? shuttleBottom + SECTION_GAP : BOARD_PADDING;
-  x = BOARD_PADDING;
-  y = sectionTop;
-  rowHeight = 0;
-
-  for (const instance of racketInstances) {
-    const scale = 1;
+    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
     const protrudeX = Math.max(0, (footprint.width - width) / 2);
     const protrudeY = Math.max(0, (footprint.height - height) / 2);
 
-    if (x + footprint.width > boardWidth - BOARD_PADDING && x > BOARD_PADDING) {
-      x = BOARD_PADDING;
-      y += rowHeight + BOARD_GAP;
+    if (x + footprint.width > boardWidth - padding) {
+      x = padding;
+      y += rowHeight + shuttleYGap;
       rowHeight = 0;
     }
 
@@ -337,15 +361,48 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
       z: z++
     };
 
-    x += footprint.width + BOARD_GAP;
+    x += footprint.width + shuttleXGap;
+    rowHeight = Math.max(rowHeight, footprint.height);
+  }
+
+  const shuttleBottom = y + rowHeight;
+  const sectionTop = shuttleInstances.length > 0 ? shuttleBottom + zoneGap : padding;
+  x = padding;
+  y = sectionTop;
+  rowHeight = 0;
+
+  for (const instance of racketInstances) {
+    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const width = instance.width * scale;
+    const height = instance.height * scale;
+    const footprint = footprintSize(width, height, instance.defaultRotate);
+    const protrudeX = Math.max(0, (footprint.width - width) / 2);
+    const protrudeY = Math.max(0, (footprint.height - height) / 2);
+
+    if (x + footprint.width > boardWidth - padding && x > padding) {
+      x = padding;
+      y += rowHeight + gap;
+      rowHeight = 0;
+    }
+
+    slots[instance.instanceId] = {
+      x: x + protrudeX,
+      y: y + protrudeY,
+      scale,
+      rotate: instance.defaultRotate,
+      z: z++
+    };
+
+    x += footprint.width + gap;
     rowHeight = Math.max(rowHeight, footprint.height);
   }
 
   const racketBottom = y + rowHeight;
-  const shoesTop = (racketInstances.length > 0 || shuttleInstances.length > 0) ? racketBottom + SECTION_GAP : BOARD_PADDING;
+  const shoesTop = (racketInstances.length > 0 || shuttleInstances.length > 0) ? racketBottom + zoneGap : padding;
 
   type RowItem = {
     instance: BoardInstance;
+    scale: number;
     width: number;
     height: number;
     footprintWidth: number;
@@ -357,18 +414,18 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
   const placeBottomAlignedRow = (rowItems: RowItem[], rowTop: number) => {
     if (!rowItems.length) return 0;
     const maxFootprintHeight = rowItems.reduce((max, item) => Math.max(max, item.footprintHeight), 0);
-    let rowX = BOARD_PADDING;
+    let rowX = padding;
 
     for (const rowItem of rowItems) {
       const yOffset = maxFootprintHeight - rowItem.footprintHeight;
       slots[rowItem.instance.instanceId] = {
         x: rowX + rowItem.protrudeX,
         y: rowTop + yOffset + rowItem.protrudeY,
-        scale: 1,
+        scale: rowItem.scale,
         rotate: rowItem.instance.defaultRotate,
         z: z++
       };
-      rowX += rowItem.footprintWidth + BOARD_GAP;
+      rowX += rowItem.footprintWidth + gap;
     }
 
     return maxFootprintHeight;
@@ -383,25 +440,27 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
     if (!shoesRowItems.length) return;
     const rowHeightPlaced = placeBottomAlignedRow(shoesRowItems, currentShoesTop);
     shoesBottom = Math.max(shoesBottom, currentShoesTop + rowHeightPlaced);
-    currentShoesTop += rowHeightPlaced + BOARD_GAP;
+    currentShoesTop += rowHeightPlaced + gap;
     shoesRowItems = [];
     shoesRowWidth = 0;
   };
 
   for (const instance of shoesInstances) {
-    const width = instance.width;
-    const height = instance.height;
+    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
+    const width = instance.width * scale;
+    const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
     const protrudeX = Math.max(0, (footprint.width - width) / 2);
     const protrudeY = Math.max(0, (footprint.height - height) / 2);
-    const nextWidth = shoesRowItems.length === 0 ? footprint.width : shoesRowWidth + BOARD_GAP + footprint.width;
+    const nextWidth = shoesRowItems.length === 0 ? footprint.width : shoesRowWidth + gap + footprint.width;
 
-    if (nextWidth > boardWidth - BOARD_PADDING * 2 && shoesRowItems.length > 0) {
+    if (nextWidth > boardWidth - padding * 2 && shoesRowItems.length > 0) {
       flushShoesRow();
     }
 
     shoesRowItems.push({
       instance,
+      scale,
       width,
       height,
       footprintWidth: footprint.width,
@@ -409,25 +468,25 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
       protrudeX,
       protrudeY
     });
-    shoesRowWidth = shoesRowItems.length === 1 ? footprint.width : shoesRowWidth + BOARD_GAP + footprint.width;
+    shoesRowWidth = shoesRowItems.length === 1 ? footprint.width : shoesRowWidth + gap + footprint.width;
   }
   flushShoesRow();
 
-  x = BOARD_PADDING;
-  y = shoesInstances.length > 0 ? shoesBottom + SECTION_GAP : shoesTop;
+  x = padding;
+  y = shoesInstances.length > 0 ? shoesBottom + zoneGap : shoesTop;
   rowHeight = 0;
 
   for (const instance of otherInstances) {
-    const scale = 1;
+    const scale = fitScaleToBoard(instance.width, instance.height, instance.defaultRotate, boardWidth, baseBoardHeight);
     const width = instance.width * scale;
     const height = instance.height * scale;
     const footprint = footprintSize(width, height, instance.defaultRotate);
     const protrudeX = Math.max(0, (footprint.width - width) / 2);
     const protrudeY = Math.max(0, (footprint.height - height) / 2);
 
-    if (x + footprint.width > boardWidth - BOARD_PADDING && x > BOARD_PADDING) {
-      x = BOARD_PADDING;
-      y += rowHeight + BOARD_GAP;
+    if (x + footprint.width > boardWidth - padding && x > padding) {
+      x = padding;
+      y += rowHeight + gap;
       rowHeight = 0;
     }
 
@@ -439,21 +498,22 @@ function recommendLayout(instances: BoardInstance[], boardWidth: number) {
       z: z++
     };
 
-    x += footprint.width + BOARD_GAP;
+    x += footprint.width + gap;
     rowHeight = Math.max(rowHeight, footprint.height);
   }
 
   const otherBottom = y + rowHeight;
   const height = Math.max(
-    BOARD_MIN_HEIGHT,
-    Math.ceil(Math.max(shuttleBottom, racketBottom, shoesBottom, otherBottom) + BOARD_PADDING + 44)
+    boardMinHeight(boardWidth),
+    Math.ceil(Math.max(shuttleBottom, racketBottom, shoesBottom, otherBottom) + padding + 44)
   );
   return { slots, height };
 }
 
-function calculateBoardHeight(slots: Record<string, LayoutSlot>, instances: BoardInstance[]) {
+function calculateBoardHeight(slots: Record<string, LayoutSlot>, instances: BoardInstance[], boardWidth: number) {
+  const padding = boardPadding(boardWidth);
   const byId = new Map(instances.map((item) => [item.instanceId, item]));
-  let maxBottom = BOARD_MIN_HEIGHT;
+  let maxBottom = boardMinHeight(boardWidth);
 
   for (const [instanceId, slot] of Object.entries(slots)) {
     const instance = byId.get(instanceId);
@@ -462,11 +522,11 @@ function calculateBoardHeight(slots: Record<string, LayoutSlot>, instances: Boar
     const height = instance.height * slot.scale;
     const footprint = footprintSize(width, height, slot.rotate);
     const protrudeY = Math.max(0, (footprint.height - height) / 2);
-    const bottom = slot.y + height + protrudeY + BOARD_PADDING;
+    const bottom = slot.y + height + protrudeY + padding;
     maxBottom = Math.max(maxBottom, bottom);
   }
 
-  return Math.max(BOARD_MIN_HEIGHT, Math.ceil(maxBottom));
+  return Math.max(boardMinHeight(boardWidth), Math.ceil(maxBottom));
 }
 
 function readStorage() {
@@ -484,6 +544,37 @@ function readStorage() {
   } catch {
     return null;
   }
+}
+
+function safeExportPixelRatio(width: number, height: number) {
+  const MAX_EXPORT_EDGE = 4096;
+  const MAX_EXPORT_PIXELS = 12_000_000;
+  const edgeRatio = Math.min(MAX_EXPORT_EDGE / Math.max(1, width), MAX_EXPORT_EDGE / Math.max(1, height));
+  const areaRatio = Math.sqrt(MAX_EXPORT_PIXELS / Math.max(1, width * height));
+
+  return clamp(Math.min(2.2, edgeRatio, areaRatio), 1, 2.2);
+}
+
+function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function loadCanvasImage(url: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.decoding = "async";
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    img.src = url;
+  });
 }
 
 async function measureImageMetrics(url: string): Promise<ImageMetrics | null> {
@@ -729,7 +820,7 @@ export function GearPegboardManager({
   } | null>(null);
 
   const [boardWidth, setBoardWidth] = useState(0);
-  const [boardHeight, setBoardHeight] = useState(BOARD_MIN_HEIGHT);
+  const [boardHeight, setBoardHeight] = useState(DESKTOP_BOARD_MIN_HEIGHT);
   const [layout, setLayout] = useState<Record<string, LayoutSlot>>({});
   const [imageMetricsByUrl, setImageMetricsByUrl] = useState<Record<string, ImageMetrics>>({});
   const [normalizedRacketByUrl, setNormalizedRacketByUrl] = useState<Record<string, string>>({});
@@ -896,6 +987,7 @@ export function GearPegboardManager({
   );
 
   const zoneGuides = useMemo(() => {
+    const zoneGap = sectionGap(boardWidth || 1120);
     let shuttleBottom = 0;
     let racketBottom = 0;
     let hasShuttle = false;
@@ -919,26 +1011,26 @@ export function GearPegboardManager({
       }
     }
 
-    const shuttleDividerY = hasShuttle ? shuttleBottom + SECTION_GAP / 2 : null;
+    const shuttleDividerY = hasShuttle ? shuttleBottom + zoneGap / 2 : null;
     const racketDividerY =
       hasRacket && shuttleDividerY
-        ? Math.max(shuttleDividerY + SECTION_GAP / 2, racketBottom + SECTION_GAP / 2)
+        ? Math.max(shuttleDividerY + zoneGap / 2, racketBottom + zoneGap / 2)
         : hasRacket
-          ? racketBottom + SECTION_GAP / 2
+          ? racketBottom + zoneGap / 2
           : null;
 
     return {
       shuttleDividerY,
       racketDividerY
     };
-  }, [instances, layout]);
+  }, [boardWidth, instances, layout]);
 
   useEffect(() => {
     const node = boardRef.current;
     if (!node) return;
 
     const observer = new ResizeObserver((entries) => {
-      const nextWidth = Math.max(480, Math.floor(entries[0]?.contentRect.width ?? 0));
+      const nextWidth = Math.max(260, Math.floor(entries[0]?.contentRect.width ?? 0));
       setBoardWidth((prev) => (prev !== nextWidth ? nextWidth : prev));
     });
     observer.observe(node);
@@ -953,7 +1045,7 @@ export function GearPegboardManager({
 
     if (!hasInitialized.current) {
       const initialSlots: Record<string, LayoutSlot> = {};
-      const candidateHeight = Math.max(recommended.height, stored?.height ?? BOARD_MIN_HEIGHT);
+      const candidateHeight = Math.max(recommended.height, stored?.height ?? boardMinHeight(boardWidth));
       hasManualLayout.current = Boolean(stored);
 
       for (const instance of instances) {
@@ -962,7 +1054,7 @@ export function GearPegboardManager({
         zCounter.current = Math.max(zCounter.current, initialSlots[instance.instanceId].z);
       }
 
-      const initialHeight = calculateBoardHeight(initialSlots, instances);
+      const initialHeight = calculateBoardHeight(initialSlots, instances, boardWidth);
       setBoardHeight(initialHeight);
       setLayout(initialSlots);
       hasInitialized.current = true;
@@ -1042,7 +1134,7 @@ export function GearPegboardManager({
             boardHeight
           )
         };
-        setBoardHeight(calculateBoardHeight(nextMap, instances));
+        setBoardHeight(calculateBoardHeight(nextMap, instances, boardWidth));
         return nextMap;
       });
     };
@@ -1128,10 +1220,125 @@ export function GearPegboardManager({
         window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
       });
 
-      const dataUrl = await toPng(node, {
-        cacheBust: true,
-        pixelRatio: 2.4
-      });
+      const exportWidth = Math.max(node.clientWidth, Math.ceil(boardWidth || node.scrollWidth || node.clientWidth));
+      const exportHeight = Math.max(node.clientHeight, Math.ceil(renderBoardHeight));
+      const pixelRatio = safeExportPixelRatio(exportWidth, exportHeight);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(exportWidth * pixelRatio);
+      canvas.height = Math.round(exportHeight * pixelRatio);
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("无法创建导出画布");
+      }
+
+      ctx.scale(pixelRatio, pixelRatio);
+
+      const isDarkTheme = document.documentElement.getAttribute("data-theme") === "dark";
+      const boardRadius = 32;
+      const boardGradient = ctx.createLinearGradient(0, 0, 0, exportHeight);
+      if (isDarkTheme) {
+        boardGradient.addColorStop(0, "#1d1f24");
+        boardGradient.addColorStop(1, "#15171b");
+      } else {
+        boardGradient.addColorStop(0, "#fafbfc");
+        boardGradient.addColorStop(1, "#f2f3f5");
+      }
+
+      roundedRectPath(ctx, 0, 0, exportWidth, exportHeight, boardRadius);
+      ctx.fillStyle = boardGradient;
+      ctx.fill();
+
+      ctx.save();
+      roundedRectPath(ctx, 0, 0, exportWidth, exportHeight, boardRadius);
+      ctx.clip();
+
+      ctx.fillStyle = isDarkTheme ? "rgba(228,228,231,0.14)" : "rgba(82,82,91,0.18)";
+      for (let y = 12; y < exportHeight; y += 24) {
+        for (let x = 12; x < exportWidth; x += 24) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const overlayGradient = ctx.createLinearGradient(0, 0, 0, exportHeight * 0.42);
+      if (isDarkTheme) {
+        overlayGradient.addColorStop(0, "rgba(255,255,255,0.04)");
+        overlayGradient.addColorStop(1, "rgba(255,255,255,0)");
+      } else {
+        overlayGradient.addColorStop(0, "rgba(255,255,255,0.68)");
+        overlayGradient.addColorStop(1, "rgba(255,255,255,0)");
+      }
+      ctx.fillStyle = overlayGradient;
+      ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+      const imageEntries = await Promise.allSettled(
+        [...new Set(instances.map((item) => item.imageUrl).filter((value): value is string => Boolean(value)))].map(async (url) => [
+          url,
+          await loadCanvasImage(url)
+        ] as const)
+      );
+      const imageMap = new Map<string, HTMLImageElement>();
+      for (const entry of imageEntries) {
+        if (entry.status === "fulfilled") {
+          imageMap.set(entry.value[0], entry.value[1]);
+        }
+      }
+
+      const drawableInstances = [...instances]
+        .map((instance) => ({ instance, slot: layout[instance.instanceId] }))
+        .filter((item): item is { instance: BoardInstance; slot: LayoutSlot } => Boolean(item.slot))
+        .sort((a, b) => a.slot.z - b.slot.z);
+
+      for (const { instance, slot } of drawableInstances) {
+        const width = instance.width * slot.scale;
+        const height = instance.height * slot.scale;
+
+        ctx.save();
+        ctx.translate(slot.x + width / 2, slot.y + height / 2);
+        ctx.rotate((slot.rotate * Math.PI) / 180);
+
+        if (!instance.active) {
+          if (instance.historyType === "usedUp") {
+            ctx.globalAlpha = 0.3;
+            ctx.filter = "grayscale(45%) saturate(75%)";
+          } else {
+            ctx.globalAlpha = 0.45;
+            ctx.filter = "grayscale(75%) saturate(80%)";
+          }
+        }
+
+        const image = instance.imageUrl ? imageMap.get(instance.imageUrl) : null;
+        if (image) {
+          ctx.drawImage(image, -width / 2, -height / 2, width, height);
+        } else {
+          roundedRectPath(ctx, -width / 2, -height / 2, width, height, 18);
+          ctx.fillStyle = isDarkTheme ? "rgba(46,48,54,0.82)" : "rgba(255,255,255,0.9)";
+          ctx.fill();
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = isDarkTheme ? "rgba(255,255,255,0.1)" : "rgba(15,23,42,0.08)";
+          ctx.stroke();
+          ctx.filter = "none";
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = isDarkTheme ? "rgba(235,235,245,0.72)" : "rgba(28,28,30,0.62)";
+          ctx.font = "12px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(instance.name, 0, 0, Math.max(64, width - 18));
+        }
+
+        ctx.restore();
+      }
+
+      ctx.restore();
+
+      roundedRectPath(ctx, 0.5, 0.5, exportWidth - 1, exportHeight - 1, boardRadius);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = isDarkTheme ? "rgba(255,255,255,0.12)" : "rgba(15,23,42,0.08)";
+      ctx.stroke();
+
+      const dataUrl = canvas.toDataURL("image/png");
       const fileName = `pegboard-${new Date().toISOString().slice(0, 10)}.png`;
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], fileName, { type: "image/png" });
@@ -1242,15 +1449,15 @@ export function GearPegboardManager({
           {!shareMode && showBounds && zoneGuides.shuttleDividerY ? (
             <div
               aria-hidden
-              className="pointer-events-none absolute left-5 right-5 border-t border-dashed border-text-mute/35"
-              style={{ top: zoneGuides.shuttleDividerY }}
+              className="pointer-events-none absolute border-t border-dashed border-text-mute/35"
+              style={{ top: zoneGuides.shuttleDividerY, left: boardPadding(boardWidth) + 4, right: boardPadding(boardWidth) + 4 }}
             />
           ) : null}
           {!shareMode && showBounds && zoneGuides.racketDividerY ? (
             <div
               aria-hidden
-              className="pointer-events-none absolute left-5 right-5 border-t border-dashed border-text-mute/25"
-              style={{ top: zoneGuides.racketDividerY }}
+              className="pointer-events-none absolute border-t border-dashed border-text-mute/25"
+              style={{ top: zoneGuides.racketDividerY, left: boardPadding(boardWidth) + 4, right: boardPadding(boardWidth) + 4 }}
             />
           ) : null}
           {instances.map((instance) => {

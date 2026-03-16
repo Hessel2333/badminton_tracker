@@ -661,13 +661,13 @@ export function PurchaseManager({
         <>
           <ControlPanel
             right={
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 <Button
                   type="button"
                   onClick={() => setWishlistOnly((current) => !current)}
                   variant="secondary"
                   className={[
-                    "min-w-[9.75rem] px-5",
+                    "w-full sm:min-w-[9.75rem] sm:w-auto px-5",
                     wishlistOnly
                       ? "border-accent/20 bg-accent/10 text-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
                       : ""
@@ -675,7 +675,7 @@ export function PurchaseManager({
                 >
                   {wishlistOnly ? "查看全部装备" : `查看心愿单${activeWishlistItems.length ? ` (${activeWishlistItems.length})` : ""}`}
                 </Button>
-                <Button type="button" onClick={openCreateModal} className="min-w-[8.75rem] px-5">
+                <Button type="button" onClick={openCreateModal} className="w-full px-5 sm:min-w-[8.75rem] sm:w-auto">
                   手动新增
                 </Button>
               </div>
@@ -685,6 +685,7 @@ export function PurchaseManager({
               options={categoryFilterItems.map((c) => ({ id: c.id, label: c.name }))}
               value={libraryCategoryId}
               onChange={setLibraryCategoryId}
+              className="w-full overflow-x-auto [&::-webkit-scrollbar]:hidden sm:w-fit"
             />
           </ControlPanel>
 
@@ -743,7 +744,7 @@ export function PurchaseManager({
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center gap-3 px-4 py-3 text-left transition hover:bg-panel"
+                          className="flex flex-col gap-3 px-4 py-3 text-left transition hover:bg-panel sm:flex-row sm:items-center"
                         >
                           {item.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -765,42 +766,46 @@ export function PurchaseManager({
                               {inWishlist ? <span className="rounded-full border border-accent/35 bg-accent/12 px-2 py-0.5 text-accent">已在心愿单</span> : null}
                             </div>
                           </div>
-                          <div className="ml-auto flex min-w-[250px] items-center justify-end gap-2">
-                            <div className="text-right">
+                          <div className="flex w-full flex-col gap-2 sm:ml-auto sm:min-w-[250px] sm:w-auto sm:items-end">
+                            <div className="sm:text-right">
                               <div className="text-xs text-mute">参考价</div>
                               <div className="text-sm text-text">{Number.isFinite(latestPrice) && latestPrice > 0 ? currency(latestPrice) : "-"}</div>
                             </div>
-                            <Button type="button" size="sm" onClick={() => applyLibraryItem(item)}>
-                              新增购买
-                            </Button>
-                            {inWishlist ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => void removeCatalogItemFromWishlist(item)}
-                                disabled={addingToWishlist}
-                              >
-                                {addingToWishlist ? "移出中..." : "移出心愿单"}
+                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+                              <Button type="button" size="sm" className="w-full sm:w-auto" onClick={() => applyLibraryItem(item)}>
+                                新增购买
                               </Button>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => void addCatalogItemToWishlist(item)}
-                                disabled={addingToWishlist}
-                              >
-                                {addingToWishlist ? "加入中..." : "加入心愿单"}
-                              </Button>
-                            )}
+                              {inWishlist ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="w-full sm:w-auto"
+                                  onClick={() => void removeCatalogItemFromWishlist(item)}
+                                  disabled={addingToWishlist}
+                                >
+                                  {addingToWishlist ? "移出中..." : "移出心愿单"}
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="w-full sm:w-auto"
+                                  onClick={() => void addCatalogItemToWishlist(item)}
+                                  disabled={addingToWishlist}
+                                >
+                                  {addingToWishlist ? "加入中..." : "加入心愿单"}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 p-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                  <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                     {visibleLibraryItems.map((item) => {
                       const latestPrice = Number(item.suggestedUnitPriceCny ?? Number.NaN);
                       const recentPurchasedAt = latestPurchaseAtByCatalogKey.get(catalogSuggestionKey(item));
@@ -891,8 +896,8 @@ export function PurchaseManager({
       )}
 
       {isEntryVisible && createOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <Card className="max-h-[92vh] w-full max-w-6xl overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 p-0 backdrop-blur-sm md:items-center md:p-4">
+          <Card className="h-full w-full overflow-y-auto rounded-none border-x-0 border-b-0 px-4 py-5 md:max-h-[92vh] md:max-w-6xl md:rounded-[28px] md:border md:px-7 md:py-7">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-[1.75rem] leading-none text-neon">新增购买记录</h2>
@@ -1200,13 +1205,13 @@ export function PurchaseManager({
               </aside>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/80 pt-4">
+            <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-mute">保存后会新增一条购买记录，并同步刷新项目档案。</div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button type="button" variant="secondary" onClick={closeCreateModal} className="min-w-[6.5rem]">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                <Button type="button" variant="secondary" onClick={closeCreateModal} className="w-full sm:min-w-[6.5rem] sm:w-auto">
                   取消
                 </Button>
-                <Button type="button" onClick={submit} disabled={saving} className="min-w-[8.5rem]">
+                <Button type="button" onClick={submit} disabled={saving} className="w-full sm:min-w-[8.5rem] sm:w-auto">
                   {saving ? "保存中..." : "保存记录"}
                 </Button>
               </div>
@@ -1323,8 +1328,8 @@ export function PurchaseManager({
       ) : null}
 
       {isLedgerVisible && editingId ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <Card className="max-h-[92vh] w-full max-w-6xl overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 p-0 backdrop-blur-sm md:items-center md:p-4">
+          <Card className="h-full w-full overflow-y-auto rounded-none border-x-0 border-b-0 px-4 py-5 md:max-h-[92vh] md:max-w-6xl md:rounded-[28px] md:border md:px-7 md:py-7">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-[1.75rem] leading-none text-neon">编辑购买记录</h2>
@@ -1549,13 +1554,13 @@ export function PurchaseManager({
               </aside>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/80 pt-4">
+            <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-mute">保存后会更新该条购买记录，并同步刷新购买台账。</div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button type="button" variant="secondary" onClick={closeEdit} className="min-w-[6.5rem]">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                <Button type="button" variant="secondary" onClick={closeEdit} className="w-full sm:min-w-[6.5rem] sm:w-auto">
                   取消
                 </Button>
-                <Button type="button" onClick={() => void saveEdit()} disabled={editingSaving} className="min-w-[8.5rem]">
+                <Button type="button" onClick={() => void saveEdit()} disabled={editingSaving} className="w-full sm:min-w-[8.5rem] sm:w-auto">
                   {editingSaving ? "保存中..." : "保存修改"}
                 </Button>
               </div>

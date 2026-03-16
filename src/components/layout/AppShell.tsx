@@ -9,7 +9,6 @@ import {
   Receipt,
   BookText,
   ShieldCheck,
-  GalleryHorizontal,
   BarChart3,
   Settings,
   LogOut,
@@ -25,11 +24,15 @@ const nav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard },
   { href: "/purchases", label: "项目装备库", icon: Receipt },
   { href: "/purchases/ledger", label: "购买台账", icon: BookText },
-  { href: "/gear-wall", label: "装备墙", icon: ShieldCheck },
-  { href: "/gear-board", label: "洞洞板", icon: GalleryHorizontal },
+  { href: "/gear-wall", label: "档案陈列", icon: ShieldCheck, matchPaths: ["/gear-wall", "/gear-board"] },
   { href: "/analytics", label: "分析看板", icon: BarChart3 },
   { href: "/settings", label: "设置", icon: Settings }
 ];
+
+function currentLoginUrl() {
+  if (typeof window === "undefined") return "/login";
+  return `${window.location.origin}/login`;
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -40,7 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const activeHref = useMemo(() => {
     let best = "";
     for (const item of nav) {
-      if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+      const matchPaths = item.matchPaths ?? [item.href];
+      const matches = matchPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+      if (matches) {
         if (item.href.length > best.length) {
           best = item.href;
         }
@@ -70,10 +75,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="absolute bottom-[-18%] right-[-12%] h-[28rem] w-[28rem] rounded-full bg-accent/10 blur-[120px]" />
       </div>
 
-      <div className="mx-auto grid w-full max-w-[1420px] grid-cols-1 gap-10 px-5 py-6 md:grid-cols-[248px_minmax(0,1fr)] md:px-7 lg:gap-12 lg:px-8">
-        <aside className="sticky top-6 h-fit transform-gpu">
-          <div className="material-blur rounded-[34px] p-3.5">
-            <Link href="/dashboard" className="group mb-3 flex items-center gap-3.5 px-2.5 py-1.5">
+      <div className="mx-auto grid w-full max-w-[1420px] grid-cols-1 gap-6 px-3 py-3 md:gap-10 md:px-7 md:py-6 md:grid-cols-[248px_minmax(0,1fr)] lg:gap-12 lg:px-8">
+        <aside className="md:sticky md:top-6 md:h-fit transform-gpu">
+          <div className="material-blur rounded-[28px] p-2.5 md:rounded-[34px] md:p-3.5">
+            <Link href="/dashboard" className="group mb-2 flex items-center gap-3 px-2 py-1.5 md:mb-3 md:gap-3.5 md:px-2.5">
             <motion.div
               whileHover={{ scale: 1.04, rotate: -3 }}
               whileTap={{ scale: 0.95 }}
@@ -102,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </Link>
 
-          <nav className="space-y-1.5 rounded-[28px] p-1.5">
+          <nav className="flex gap-1.5 overflow-x-auto rounded-[24px] p-1.5 pb-2 md:block md:space-y-1.5 md:overflow-visible md:rounded-[28px] [&::-webkit-scrollbar]:hidden">
             {nav.map((item) => {
               const active = item.href === activeHref;
               const Icon = item.icon;
@@ -111,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-[22px] px-4 py-3 text-sm transition-all",
+                    "group relative flex shrink-0 items-center gap-2.5 rounded-[20px] px-3.5 py-2.5 text-sm transition-all md:gap-3 md:rounded-[22px] md:px-4 md:py-3",
                     active
                       ? "font-semibold text-text"
                       : "font-medium text-text-mute hover:bg-black/[0.035] hover:text-text"
@@ -124,14 +129,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <Icon size={18} className={cn("relative transition-colors", active ? "text-accent" : "text-text-mute group-hover:text-text")} />
-                  <span className="relative">{item.label}</span>
+                  <Icon size={18} className={cn("relative shrink-0 transition-colors", active ? "text-accent" : "text-text-mute group-hover:text-text")} />
+                  <span className="relative whitespace-nowrap">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-3 flex items-center gap-2 px-1.5">
+          <div className="mt-2 flex items-center gap-2 px-1 md:mt-3 md:px-1.5">
             <button
               type="button"
               className="group flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[var(--border)] bg-[color:var(--panel-2)] text-text-mute shadow-[inset_0_1px_0_var(--glass-border)] transition-all hover:border-[var(--border-strong)] hover:text-text"
@@ -141,17 +146,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button
               type="button"
-              className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[color:var(--panel-2)] px-4 text-text-mute shadow-[inset_0_1px_0_var(--glass-border)] transition-all hover:border-[var(--danger-soft-border)] hover:bg-[var(--danger-soft-bg)] hover:text-[var(--danger-soft-text)]"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex h-[42px] min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[color:var(--panel-2)] px-4 text-text-mute shadow-[inset_0_1px_0_var(--glass-border)] transition-all hover:border-[var(--danger-soft-border)] hover:bg-[var(--danger-soft-bg)] hover:text-[var(--danger-soft-text)]"
+              onClick={() => signOut({ callbackUrl: currentLoginUrl() })}
             >
               <LogOut size={16} />
-              <span className="text-sm">退出登录</span>
+              <span className="truncate text-sm">退出登录</span>
             </button>
           </div>
           </div>
         </aside>
 
-        <main className="min-h-[calc(100vh-4rem)] pt-2">
+        <main className="min-h-[calc(100vh-4rem)] pt-1 md:pt-2">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={pathname}

@@ -119,80 +119,6 @@ export function AnalyticsBoard({
     if (range === "all") return "全部历史";
     return `${range} 年`;
   }, [range]);
-  const topBrand = useMemo(
-    () =>
-      [...brandShare].sort((a, b) => b.amount - a.amount)[0] ?? null,
-    [brandShare]
-  );
-  const topCategory = useMemo(
-    () =>
-      [...categoryShare].sort((a, b) => b.amount - a.amount)[0] ?? null,
-    [categoryShare]
-  );
-  const topFrequencyBucket = useMemo(
-    () =>
-      [...frequency].sort((a, b) => b.count - a.count)[0] ?? null,
-    [frequency]
-  );
-  const trendHeadline = useMemo(() => {
-    const latest = trend.at(-1) ?? null;
-    const previous = trend.at(-2) ?? null;
-
-    if (!latest) {
-      return {
-        title: "当前还没有形成有效投入趋势",
-        summary: "先从购买记录里补够几次真实消费，分析页才会开始给出更可靠的判断。",
-        hint: "建议先在购买页补齐价格、状态和时间。"
-      };
-    }
-
-    if (!previous) {
-      return {
-        title: `${rangeLabel}投入主要集中在 ${latest.bucket.slice(0, 7)}`,
-        summary: `目前能确认的累计投入为 ${currency(latest.amount)}，还需要更多历史记录才能看出波动方向。`,
-        hint: "至少需要两个时间点，趋势判断才有意义。"
-      };
-    }
-
-    const delta = latest.amount - previous.amount;
-    const direction =
-      delta > 0 ? "抬升" : delta < 0 ? "回落" : "持平";
-    const deltaText = currency(Math.abs(delta));
-
-    return {
-      title: `${latest.bucket.slice(0, 7)} 的投入相较上一个周期${direction}`,
-      summary:
-        delta === 0
-          ? `两个连续周期都维持在 ${currency(latest.amount)} 左右，最近的购买节奏比较稳定。`
-          : `最新周期投入为 ${currency(latest.amount)}，变化幅度 ${deltaText}。先确认这次波动来自补库存、换主力还是临时尝试。`,
-      hint:
-        topCategory && topBrand
-          ? `当前最吃预算的是 ${topCategory.category}，而 ${topBrand.brand} 是目前占比最高的品牌。`
-          : "再结合下面的品牌和品类占比，可以更快定位预算重心。"
-    };
-  }, [rangeLabel, topBrand, topCategory, trend]);
-
-  const preferenceHighlights = useMemo(
-    () => [
-      {
-        label: "主投入品牌",
-        value: topBrand ? topBrand.brand : "暂无数据",
-        hint: topBrand ? `${currency(topBrand.amount)}，当前占用最多预算` : "还没有形成品牌偏好"
-      },
-      {
-        label: "主投入品类",
-        value: topCategory ? topCategory.category : "暂无数据",
-        hint: topCategory ? `${currency(topCategory.amount)}，是当前最重的投入方向` : "还没有形成品类偏好"
-      },
-      {
-        label: "最活跃周期",
-        value: topFrequencyBucket ? topFrequencyBucket.bucket.slice(0, 7) : "暂无数据",
-        hint: topFrequencyBucket ? `${topFrequencyBucket.count} 次购买，适合回看是否属于补货高峰` : "还没有形成稳定购买节奏"
-      }
-    ],
-    [topBrand, topCategory, topFrequencyBucket]
-  );
-
   const shuttleInsightCards = useMemo(
     () => [
       {
@@ -392,7 +318,7 @@ export function AnalyticsBoard({
     <div className="space-y-6">
       <ControlPanel
         right={
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-panel-2/50 px-3 py-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]">
               <span className="text-[10px] uppercase tracking-wider text-mute">{rangeLabel}投入</span>
               <span className="h-3 w-[1px] bg-border/40" />
@@ -409,50 +335,6 @@ export function AnalyticsBoard({
       </ControlPanel>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
-        <Card>
-          <div className="text-xs uppercase tracking-[0.24em] text-mute">本期判断</div>
-          <div className="mt-3 max-w-2xl">
-            <h3 className="font-display text-2xl leading-tight text-accent">{trendHeadline.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-text">{trendHeadline.summary}</p>
-            <p className="mt-2 text-sm leading-7 text-text-mute">{trendHeadline.hint}</p>
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[22px] border border-border bg-panel-2/80 px-4 py-3">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-mute">{rangeLabel}总投入</div>
-              <div className="mt-2 font-display text-xl text-text">{currency(totalSpending)}</div>
-            </div>
-            <div className="rounded-[22px] border border-border bg-panel-2/80 px-4 py-3">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-mute">预算焦点</div>
-              <div className="mt-2 text-base font-semibold text-text">{topCategory?.category ?? "暂无数据"}</div>
-              <div className="mt-1 text-xs text-text-mute">
-                {topCategory ? currency(topCategory.amount) : "补够购买记录后会出现"}
-              </div>
-            </div>
-            <div className="rounded-[22px] border border-border bg-panel-2/80 px-4 py-3">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-mute">品牌偏重</div>
-              <div className="mt-2 text-base font-semibold text-text">{topBrand?.brand ?? "暂无数据"}</div>
-              <div className="mt-1 text-xs text-text-mute">
-                {topBrand ? currency(topBrand.amount) : "补够购买记录后会出现"}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-xs uppercase tracking-[0.24em] text-mute">偏好切片</div>
-          <div className="mt-4 space-y-3">
-            {preferenceHighlights.map((item) => (
-              <div key={item.label} className="rounded-[22px] border border-border bg-panel-2/75 px-4 py-3">
-                <div className="text-[11px] uppercase tracking-[0.2em] text-mute">{item.label}</div>
-                <div className="mt-2 text-base font-semibold text-text">{item.value}</div>
-                <div className="mt-1 text-xs leading-6 text-text-mute">{item.hint}</div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {shuttleInsightCards.map((item) => (

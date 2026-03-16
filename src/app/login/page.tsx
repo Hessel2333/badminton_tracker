@@ -9,6 +9,19 @@ import { BrandMark } from "@/components/entry/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+function normalizeCallbackPath(input?: string | null) {
+  if (!input) return "/dashboard";
+
+  try {
+    const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    const url = new URL(input, base);
+    const nextPath = `${url.pathname}${url.search}${url.hash}`;
+    return nextPath.startsWith("/") ? nextPath : "/dashboard";
+  } catch {
+    return input.startsWith("/") ? input : "/dashboard";
+  }
+}
+
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +36,7 @@ export default function LoginPage() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    setCallbackUrl(params.get("callbackUrl") ?? "/dashboard");
+    setCallbackUrl(normalizeCallbackPath(params.get("callbackUrl")));
   }, []);
 
   async function onSubmit(event: FormEvent) {
@@ -45,7 +58,7 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.href = result?.url ?? callbackUrl;
+    window.location.assign(normalizeCallbackPath(result?.url ?? callbackUrl));
   }
 
   return (
