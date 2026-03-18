@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import { CATEGORIES_TAG, PROJECT_CATALOG_TAG } from "@/lib/server/reference-data";
 
 export async function GET() {
   const auth = await requireSession();
@@ -381,6 +383,9 @@ export async function POST(request: NextRequest) {
         });
       }
     });
+
+    revalidateTag(CATEGORIES_TAG);
+    revalidateTag(PROJECT_CATALOG_TAG);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

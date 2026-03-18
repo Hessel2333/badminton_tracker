@@ -44,8 +44,20 @@ model User {
   passwordHash String   @map("password_hash")
   role         Role     @default(ADMIN)
   createdAt    DateTime @default(now()) @map("created_at")
+  preference   UserPreference?
 
   @@map("users")
+}
+
+model UserPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  pegboardLayouts Json?    @map("pegboard_layouts")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }
 
 model Brand {

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { canonicalProductKey, canonicalProductName } from "@/lib/business-rules";
 import { HOT_GEAR_CATALOG } from "@/lib/data/hot-gear-catalog";
-import { buildProjectCatalogEntries } from "@/lib/project-catalog";
+import { getCachedCategories, getCachedProjectCatalogEntries } from "@/lib/server/reference-data";
 
 type CatalogItem = {
   id: string;
@@ -90,14 +90,12 @@ export async function GET(request: NextRequest) {
   const categoryIdFilter = (searchParams.get("categoryId") ?? "").trim();
   const limit = Math.min(3000, Math.max(8, Number(searchParams.get("limit") ?? "24")));
 
-  const categories = await prisma.category.findMany({
-    select: { id: true, name: true }
-  });
+  const categories = (await getCachedCategories()).map((item) => ({ id: item.id, name: item.name }));
   const categoryByName = new Map(categories.map((item) => [item.name, item.id]));
   const categoryById = new Map(categories.map((item) => [item.id, item.name]));
 
-  const overrides = await prisma.projectCatalogOverride.findMany();
-  const projectItems: CatalogItem[] = buildProjectCatalogEntries(overrides).map((item) => {
+  const projectCatalogEntries = await getCachedProjectCatalogEntries();
+  const projectItems: CatalogItem[] = projectCatalogEntries.map((item) => {
     const categoryId = categoryByName.get(item.categoryName) ?? "";
     return {
       id: `project:${item.entryKey}`,

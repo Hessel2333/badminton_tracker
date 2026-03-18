@@ -76,11 +76,15 @@ export function WishlistManager({
 
   const { data: wishlistData, mutate: mutateWishlist } =
     useSWR<{ items: WishlistItem[] }>("/api/wishlist", fetcher, {
-      fallbackData: fallbackWishlist ? { items: fallbackWishlist } : undefined
+      fallbackData: fallbackWishlist ? { items: fallbackWishlist } : undefined,
+      revalidateIfStale: !fallbackWishlist,
+      revalidateOnMount: !fallbackWishlist
     });
   const { data: categoryData } =
     useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
-      fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined
+      fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
+      revalidateIfStale: !fallbackCategories,
+      revalidateOnMount: !fallbackCategories
     });
 
   const items = wishlistData?.items ?? [];

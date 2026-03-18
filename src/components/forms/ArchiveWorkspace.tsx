@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GalleryHorizontal, Grid } from "lucide-react";
 
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
+import type { PegboardLayoutStore } from "@/lib/pegboard-layout";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 
 const GearWallManager = dynamic(
@@ -53,10 +54,12 @@ const tabConfig: Record<
 
 export function ArchiveWorkspace({
   initialItems,
-  view
+  view,
+  initialPegboardLayouts
 }: {
   initialItems: GearWallItem[];
   view: ArchiveView;
+  initialPegboardLayouts?: PegboardLayoutStore;
 }) {
   const current = tabConfig[view];
 
@@ -92,7 +95,7 @@ export function ArchiveWorkspace({
       {view === "status" ? (
         <GearWallManager initialItems={initialItems} />
       ) : (
-        <GearPegboardManager initialItems={initialItems} />
+        <GearPegboardManager initialItems={initialItems} initialSavedLayouts={initialPegboardLayouts} />
       )}
     </div>
   );

@@ -222,16 +222,40 @@ h3,
 }
 
 /* Theme Color Overrides (plume scar variations) */
-[data-color="cyan"] {
-  --accent: #0891b2;
-  --neon: #06b6d4;
-  --accent-dark: #0e7490;
+[data-color="yonex-green"] {
+  --accent: #00a84f;
+  --neon: #1bc86b;
+  --accent-dark: #008640;
 }
 
-[data-theme="dark"][data-color="cyan"] {
-  --accent: #06b6d4;
-  --neon: #22d3ee;
-  --accent-dark: #0891b2;
+[data-theme="dark"][data-color="yonex-green"] {
+  --accent: #22c36d;
+  --neon: #43d88a;
+  --accent-dark: #00a84f;
+}
+
+[data-color="victor-blue"] {
+  --accent: #0e2f90;
+  --neon: #2d56c7;
+  --accent-dark: #0a2470;
+}
+
+[data-theme="dark"][data-color="victor-blue"] {
+  --accent: #3763d8;
+  --neon: #6c92ff;
+  --accent-dark: #1b46b6;
+}
+
+[data-color="lining-red"] {
+  --accent: #e42d36;
+  --neon: #f0525a;
+  --accent-dark: #c9222a;
+}
+
+[data-theme="dark"][data-color="lining-red"] {
+  --accent: #f0525a;
+  --neon: #ff8086;
+  --accent-dark: #e42d36;
 }
 
 [data-color="silver"] {

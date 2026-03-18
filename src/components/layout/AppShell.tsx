@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Receipt,
@@ -17,17 +17,67 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { mutate } from "swr";
 
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard },
-  { href: "/purchases", label: "项目装备库", icon: Receipt },
-  { href: "/purchases/ledger", label: "购买台账", icon: BookText },
+  {
+    href: "/purchases",
+    label: "项目装备库",
+    icon: Receipt,
+    dataKeys: ["/api/purchases?pageSize=80", "/api/settings/categories", "/api/catalog?scope=project&limit=240", "/api/wishlist"]
+  },
+  {
+    href: "/purchases/ledger",
+    label: "购买台账",
+    icon: BookText,
+    dataKeys: ["/api/purchases?pageSize=80", "/api/settings/categories", "/api/wishlist"]
+  },
   { href: "/gear-wall", label: "档案陈列", icon: ShieldCheck, matchPaths: ["/gear-wall", "/gear-board"] },
-  { href: "/analytics", label: "分析看板", icon: BarChart3 },
-  { href: "/settings", label: "设置", icon: Settings }
+  { href: "/analytics", label: "分析看板", icon: BarChart3, dataKeys: ["/api/analytics/full?range=all"] },
+  {
+    href: "/settings",
+    label: "设置",
+    icon: Settings,
+    dataKeys: [
+      "/api/settings/categories",
+      "/api/settings/brands",
+      "/api/settings/rating-dimensions",
+      "/api/settings/project-catalog"
+    ]
+  }
 ];
+
+const WARM_NAV_DELAY_MS = 180;
+
+function fetchJson(url: string) {
+  return fetch(url).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Request failed for ${url}: ${response.status}`);
+    }
+    return response.json();
+  });
+}
+
+function scheduleIdleWork(callback: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+
+  const idleWindow = window as Window &
+    typeof globalThis & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+  if (typeof idleWindow.requestIdleCallback === "function" && typeof idleWindow.cancelIdleCallback === "function") {
+    const id = idleWindow.requestIdleCallback(() => callback(), { timeout: 1200 });
+    return () => idleWindow.cancelIdleCallback?.(id);
+  }
+
+  const id = window.setTimeout(callback, 120);
+  return () => window.clearTimeout(id);
+}
 
 function currentLoginUrl() {
   if (typeof window === "undefined") return "/login";
@@ -36,10 +86,13 @@ function currentLoginUrl() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     if (typeof document === "undefined") return "light";
     return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
   });
+  const prefetchedRoutes = useRef<Set<string>>(new Set());
+  const prefetchedDataKeys = useRef<Set<string>>(new Set());
   const activeHref = useMemo(() => {
     let best = "";
     for (const item of nav) {
@@ -59,6 +112,45 @@ export function AppShell({ children }: { children: ReactNode }) {
     setTheme(nextTheme);
     window.localStorage.setItem("theme", nextTheme);
   }, []);
+
+  function prefetchNavItem(href: string) {
+    if (!prefetchedRoutes.current.has(href)) {
+      prefetchedRoutes.current.add(href);
+      router.prefetch(href);
+    }
+
+    const item = nav.find((entry) => entry.href === href);
+    if (!item?.dataKeys?.length) return;
+
+    for (const key of item.dataKeys) {
+      if (prefetchedDataKeys.current.has(key)) continue;
+      prefetchedDataKeys.current.add(key);
+      void mutate(key, fetchJson(key), {
+        populateCache: true,
+        revalidate: false
+      }).catch(() => {
+        prefetchedDataKeys.current.delete(key);
+      });
+    }
+  }
+
+  useEffect(() => {
+    const pendingItems = nav.filter((item) => item.href !== activeHref);
+    const timers: number[] = [];
+    const cancelIdle = scheduleIdleWork(() => {
+      pendingItems.forEach((item, index) => {
+        const timer = window.setTimeout(() => {
+          prefetchNavItem(item.href);
+        }, index * WARM_NAV_DELAY_MS);
+        timers.push(timer);
+      });
+    });
+
+    return () => {
+      cancelIdle();
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [activeHref, router]);
 
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -115,6 +207,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onMouseEnter={() => prefetchNavItem(item.href)}
+                  onFocus={() => prefetchNavItem(item.href)}
                   className={cn(
                     "group relative flex shrink-0 items-center gap-2.5 rounded-[20px] px-3.5 py-2.5 text-sm transition-all md:gap-3 md:rounded-[22px] md:px-4 md:py-3",
                     active
@@ -156,14 +250,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main className="min-h-[calc(100vh-4rem)] pt-1 md:pt-2">
-          <AnimatePresence mode="popLayout" initial={false}>
+        <main className="relative min-h-[calc(100vh-4rem)] pt-1 md:pt-2">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 10 }}
+              className="relative z-0"
+              initial={{ opacity: 0.82, y: 2 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0.96, y: -1 }}
+              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
             >
               {children}
             </motion.div>

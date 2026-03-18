@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="zh-CN" data-theme={initialTheme} suppressHydrationWarning>
       <head>
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var d=document.documentElement;var t=d.getAttribute('data-theme');if(t!=='light'&&t!=='dark'){t='light';d.setAttribute('data-theme','light');}localStorage.setItem('theme',t);var c=localStorage.getItem('color');if(c){d.setAttribute('data-color',c);}}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`}
+          {`(function(){try{var d=document.documentElement;var t=d.getAttribute('data-theme');if(t!=='light'&&t!=='dark'){t='light';d.setAttribute('data-theme','light');}localStorage.setItem('theme',t);var c=localStorage.getItem('color');if(c==='cyan'){c='victor-blue';localStorage.setItem('color',c);}if(c&&c!=='default'){d.setAttribute('data-color',c);}else{d.removeAttribute('data-color');}}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`}
         </Script>
       </head>
       <body>

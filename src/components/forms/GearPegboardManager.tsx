@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImageDown, RotateCcw, Sparkles, Tag, Database, Package } from "lucide-react";
+import { ImageDown, Sparkles, Tag, Database, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { PEGBOARD_LAYOUT_VERSION, type PegboardLayoutMode, type PegboardLayoutSnapshot, type PegboardLayoutStore } from "@/lib/pegboard-layout";
 import { cn } from "@/lib/utils";
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -44,8 +45,7 @@ type ImageMetrics = {
   majorAxisAngleDeg: number;
 };
 
-const STORAGE_KEY = "gear-board-layout-v12";
-const LAYOUT_VERSION = 12;
+const LEGACY_STORAGE_KEY = "gear-board-layout-v12";
 const DESKTOP_BOARD_MIN_HEIGHT = 960;
 const WHITE_BG_THRESHOLD = 246;
 
@@ -539,21 +539,40 @@ function calculateBoardHeight(slots: Record<string, LayoutSlot>, instances: Boar
   return Math.max(boardMinHeight(boardWidth), Math.ceil(maxBottom));
 }
 
-function readStorage() {
+function readLegacyStorage() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as {
       v: number;
       height: number;
       slots: Record<string, LayoutSlot>;
     };
-    if (!parsed || parsed.v !== LAYOUT_VERSION || !parsed.slots) return null;
+    if (!parsed || parsed.v !== PEGBOARD_LAYOUT_VERSION || !parsed.slots) return null;
     return parsed;
   } catch {
     return null;
   }
+}
+
+function snapshotToLayoutPayload(snapshot: PegboardLayoutSnapshot) {
+  return {
+    height: snapshot.height,
+    slots: snapshot.slots as Record<string, LayoutSlot>
+  };
+}
+
+function createLayoutSnapshot(boardHeight: number, layout: Record<string, LayoutSlot>): PegboardLayoutSnapshot {
+  return {
+    v: PEGBOARD_LAYOUT_VERSION,
+    height: Math.max(0, Math.round(boardHeight)),
+    slots: layout
+  };
+}
+
+function serializeLayoutSnapshot(snapshot: PegboardLayoutSnapshot | null | undefined) {
+  return snapshot ? JSON.stringify(snapshot) : "";
 }
 
 function safeExportPixelRatio(width: number, height: number) {
@@ -810,14 +829,21 @@ async function normalizeAndTrimCutout(
 }
 
 export function GearPegboardManager({
-  initialItems
+  initialItems,
+  initialSavedLayouts = {}
 }: {
   initialItems: GearWallItem[];
+  initialSavedLayouts?: PegboardLayoutStore;
 }) {
   const router = useRouter();
   const boardRef = useRef<HTMLDivElement | null>(null);
   const hasInitialized = useRef(false);
   const hasManualLayout = useRef(false);
+  const loadedModeRef = useRef<PegboardLayoutMode | null>(null);
+  const lastPersistedRef = useRef<Partial<Record<PegboardLayoutMode, string>>>({
+    active: serializeLayoutSnapshot(initialSavedLayouts.active),
+    history: serializeLayoutSnapshot(initialSavedLayouts.history)
+  });
   const zCounter = useRef(20);
   const dragRef = useRef<{
     instanceId: string;
@@ -839,6 +865,7 @@ export function GearPegboardManager({
   const [shareMode, setShareMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [savedLayouts, setSavedLayouts] = useState<PegboardLayoutStore>(initialSavedLayouts);
 
   useEffect(() => {
     let cancelled = false;
@@ -995,6 +1022,7 @@ export function GearPegboardManager({
     () => new Map(instances.map((item) => [item.instanceId, item])),
     [instances]
   );
+  const currentMode: PegboardLayoutMode = showHistory ? "history" : "active";
 
   const zoneGuides = useMemo(() => {
     const zoneGap = sectionGap(boardWidth || 1120);
@@ -1051,9 +1079,15 @@ export function GearPegboardManager({
     if (boardWidth <= 0) return;
 
     const recommended = recommendLayout(instances, boardWidth);
-    const stored = readStorage();
+    const savedSnapshot = savedLayouts[currentMode];
+    const stored = savedSnapshot
+      ? snapshotToLayoutPayload(savedSnapshot)
+      : !hasInitialized.current
+        ? readLegacyStorage()
+        : null;
+    const shouldLoadFresh = !hasInitialized.current || loadedModeRef.current !== currentMode;
 
-    if (!hasInitialized.current) {
+    if (shouldLoadFresh) {
       const initialSlots: Record<string, LayoutSlot> = {};
       const candidateHeight = Math.max(recommended.height, stored?.height ?? boardMinHeight(boardWidth));
       hasManualLayout.current = Boolean(stored);
@@ -1068,6 +1102,10 @@ export function GearPegboardManager({
       setBoardHeight(initialHeight);
       setLayout(initialSlots);
       hasInitialized.current = true;
+      loadedModeRef.current = currentMode;
+      lastPersistedRef.current[currentMode] = savedSnapshot
+        ? serializeLayoutSnapshot(savedSnapshot)
+        : "";
       return;
     }
 
@@ -1089,24 +1127,43 @@ export function GearPegboardManager({
       return merged;
     });
     setBoardHeight((prev) => Math.max(prev, recommended.height));
-  }, [boardWidth, boardHeight, instances, instancesKey]);
+  }, [boardWidth, boardHeight, currentMode, instances, instancesKey, savedLayouts]);
 
   useEffect(() => {
     if (!hasInitialized.current || typeof window === "undefined") return;
+    if (!hasManualLayout.current) return;
+
+    const snapshot = createLayoutSnapshot(boardHeight, layout);
+    const serialized = serializeLayoutSnapshot(snapshot);
+    if (lastPersistedRef.current[currentMode] === serialized) return;
 
     const timer = window.setTimeout(() => {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          v: LAYOUT_VERSION,
-          height: boardHeight,
-          slots: layout
+      void fetch("/api/settings/pegboard-layout", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: currentMode,
+          layout: snapshot
         })
-      );
-    }, 120);
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to save pegboard layout: ${response.status}`);
+          }
+          if (typeof window !== "undefined") {
+            window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+          }
+          lastPersistedRef.current[currentMode] = serialized;
+          setSavedLayouts((prev) => ({
+            ...prev,
+            [currentMode]: snapshot
+          }));
+        })
+        .catch(() => undefined);
+    }, 320);
 
     return () => window.clearTimeout(timer);
-  }, [boardHeight, layout]);
+  }, [boardHeight, currentMode, layout]);
 
   useEffect(() => {
     const onMove = (event: PointerEvent) => {
@@ -1175,17 +1232,27 @@ export function GearPegboardManager({
   function applyRecommendedLayout() {
     if (boardWidth <= 0) return;
     const recommended = recommendLayout(instances, boardWidth);
-    hasManualLayout.current = false;
-    setLayout(recommended.slots);
-    setBoardHeight(recommended.height);
-  }
-
-  function resetLayout() {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     }
     hasManualLayout.current = false;
-    applyRecommendedLayout();
+    loadedModeRef.current = currentMode;
+    lastPersistedRef.current[currentMode] = "";
+    setSavedLayouts((prev) => {
+      const next = { ...prev };
+      delete next[currentMode];
+      return next;
+    });
+    setLayout(recommended.slots);
+    setBoardHeight(recommended.height);
+    void fetch("/api/settings/pegboard-layout", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: currentMode,
+        layout: null
+      })
+    }).catch(() => undefined);
   }
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>, instanceId: string) {
@@ -1420,11 +1487,7 @@ export function GearPegboardManager({
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" size="sm" onClick={applyRecommendedLayout} className="px-3">
               <Sparkles size={14} className="mr-1.5" />
-              推荐布局
-            </Button>
-            <Button variant="secondary" size="sm" onClick={resetLayout} className="px-3">
-              <RotateCcw size={14} className="mr-1.5" />
-              重置
+              恢复推荐
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowBounds((prev) => !prev)} className="px-3">
               {showBounds ? "隐藏边框" : "显示边框"}

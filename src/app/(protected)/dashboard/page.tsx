@@ -3,6 +3,7 @@ import { ItemStatus } from "@prisma/client";
 import { ArrowRight, BarChart3, GalleryHorizontal, Grid, Layout, Package2 } from "lucide-react";
 
 import { Card } from "@/components/ui/Card";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { currency, dateText } from "@/lib/utils";
 import { getOverview } from "@/lib/analytics/queries";
@@ -243,10 +244,15 @@ export default async function DashboardPage() {
                 key={item.id}
                 className="flex gap-4 rounded-[24px] border border-[color:color-mix(in_srgb,var(--accent)_10%,var(--border))] bg-[color:color-mix(in_srgb,var(--panel-3)_84%,white)] p-4"
               >
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[20px] bg-[color:color-mix(in_srgb,var(--panel-2)_96%,white)]">
+                <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[20px] bg-[color:color-mix(in_srgb,var(--panel-2)_96%,white)]">
                   {imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imageUrl} alt={item.itemNameSnapshot} className="h-full w-full object-contain p-2" />
+                    <SmartImage
+                      src={imageUrl}
+                      alt={item.itemNameSnapshot}
+                      fill
+                      sizes="96px"
+                      className="h-full w-full object-contain p-2"
+                    />
                   ) : (
                     <Package2 className="h-8 w-8 text-text-mute" />
                   )}

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ControlPanel } from "@/components/ui/ControlPanel";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/business-rules";
 import { getPurchaseChannelOptions } from "@/lib/purchase-options";
 import { currency, dateText } from "@/lib/utils";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type Category = {
   id: string;
@@ -212,10 +214,14 @@ function wishlistCatalogKey(item: Pick<CatalogSuggestion, "name" | "brandName" |
 export function PurchaseManager({
   fallbackPurchases,
   fallbackCategories,
+  fallbackCatalogItems,
+  fallbackWishlist,
   mode = "all"
 }: {
   fallbackPurchases?: PurchaseRow[];
   fallbackCategories?: Category[];
+  fallbackCatalogItems?: CatalogSuggestion[];
+  fallbackWishlist?: WishlistSourceItem[];
   mode?: PurchaseManagerMode;
 } = {}) {
   const [saving, setSaving] = useState(false);
@@ -234,27 +240,43 @@ export function PurchaseManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PurchaseForm>(initialForm);
   const [editingSaving, setEditingSaving] = useState(false);
+  const debouncedLibraryQuery = useDebouncedValue(libraryQuery, 220);
 
   const { data: purchaseData, isLoading: purchaseLoading, mutate: mutatePurchases } =
-    useSWR<{ items: PurchaseRow[] }>("/api/purchases?pageSize=200", fetcher, {
-      fallbackData: fallbackPurchases ? { items: fallbackPurchases } : undefined
+    useSWR<{ items: PurchaseRow[] }>("/api/purchases?pageSize=80", fetcher, {
+      fallbackData: fallbackPurchases ? { items: fallbackPurchases } : undefined,
+      revalidateIfStale: !fallbackPurchases,
+      revalidateOnMount: !fallbackPurchases
     });
   const { data: categoryData } =
     useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
-      fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined
+      fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
+      revalidateIfStale: !fallbackCategories,
+      revalidateOnMount: !fallbackCategories
     });
   const libraryUrl = useMemo(() => {
     const params = new URLSearchParams();
     params.set("scope", "project");
-    params.set("limit", "2000");
+    params.set("limit", "240");
     if (libraryCategoryId) params.set("categoryId", libraryCategoryId);
-    if (libraryQuery.trim()) params.set("q", libraryQuery.trim());
+    if (debouncedLibraryQuery.trim()) params.set("q", debouncedLibraryQuery.trim());
     return `/api/catalog?${params.toString()}`;
-  }, [libraryCategoryId, libraryQuery]);
+  }, [debouncedLibraryQuery, libraryCategoryId]);
   const { data: libraryData, isLoading: libraryLoading } =
-    useSWR<{ items: CatalogSuggestion[] }>(libraryUrl, fetcher);
+    useSWR<{ items: CatalogSuggestion[] }>(libraryUrl, fetcher, {
+      fallbackData:
+        fallbackCatalogItems && !libraryCategoryId && !debouncedLibraryQuery.trim()
+          ? { items: fallbackCatalogItems }
+          : undefined,
+      revalidateIfStale: !(fallbackCatalogItems && !libraryCategoryId && !debouncedLibraryQuery.trim()),
+      revalidateOnMount: !(fallbackCatalogItems && !libraryCategoryId && !debouncedLibraryQuery.trim())
+    });
   const { data: wishlistData, mutate: mutateWishlist } =
-    useSWR<{ items: WishlistSourceItem[] }>("/api/wishlist", fetcher);
+    useSWR<{ items: WishlistSourceItem[] }>("/api/wishlist", fetcher, {
+      fallbackData: fallbackWishlist ? { items: fallbackWishlist } : undefined,
+      revalidateIfStale: !fallbackWishlist,
+      revalidateOnMount: !fallbackWishlist
+    });
 
   const items = purchaseData?.items ?? [];
   const categories = categoryData?.items ?? [];
@@ -747,12 +769,15 @@ export function PurchaseManager({
                           className="flex flex-col gap-3 px-4 py-3 text-left transition hover:bg-panel sm:flex-row sm:items-center"
                         >
                           {item.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="h-14 w-14 rounded-md border border-border object-contain bg-panel-2"
-                            />
+                            <div className="relative h-14 w-14 overflow-hidden rounded-md border border-border bg-panel-2">
+                              <SmartImage
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                sizes="56px"
+                                className="object-contain"
+                              />
+                            </div>
                           ) : (
                             <div className="h-14 w-14 rounded-md border border-dashed border-border" />
                           )}
@@ -819,10 +844,11 @@ export function PurchaseManager({
                           <div className="space-y-3">
                             <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-panel-2 shadow-inner">
                               {item.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
+                                <SmartImage
                                   src={item.imageUrl}
                                   alt={item.name}
+                                  fill
+                                  sizes="(max-width: 640px) 50vw, (max-width: 1280px) 25vw, 20vw"
                                   className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                                 />
                               ) : (
@@ -1141,10 +1167,11 @@ export function PurchaseManager({
                   </div>
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] border border-border bg-panel-2">
                     {form.gearCoverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <SmartImage
                         src={form.gearCoverImageUrl}
                         alt={form.itemNameSnapshot || "装备图片预览"}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 320px"
                         className="h-full w-full object-contain p-4"
                       />
                     ) : (
@@ -1529,10 +1556,11 @@ export function PurchaseManager({
                   </div>
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[22px] border border-border bg-panel-2">
                     {editForm.gearCoverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <SmartImage
                         src={editForm.gearCoverImageUrl}
                         alt={editForm.itemNameSnapshot || "装备图片预览"}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 320px"
                         className="h-full w-full object-contain p-4"
                       />
                     ) : (

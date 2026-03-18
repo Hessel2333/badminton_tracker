@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 type Category = {
   id: string;
@@ -73,16 +74,33 @@ const TAB_OPTIONS = [
   { id: "advanced", label: "高级与备份", icon: <Database size={14} /> },
 ];
 
-export function SettingsManager() {
+export function SettingsManager({
+  fallbackCategories,
+  fallbackBrands,
+  fallbackDimensions,
+  fallbackProjectCatalog
+}: {
+  fallbackCategories?: Category[];
+  fallbackBrands?: Brand[];
+  fallbackDimensions?: RatingDimension[];
+  fallbackProjectCatalog?: ProjectCatalogItem[];
+} = {}) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("catalog");
   const [accentColor, setAccentColor] = useState<string>("default");
 
   useEffect(() => {
-    const color = window.localStorage.getItem("color") || "default";
+    const stored = window.localStorage.getItem("color") || "default";
+    const color = stored === "cyan" ? "victor-blue" : stored;
+    if (stored === "cyan") {
+      window.localStorage.setItem("color", color);
+    }
+
     if (color && color !== "default") {
       document.documentElement.setAttribute("data-color", color);
-      setAccentColor(color);
+    } else {
+      document.documentElement.removeAttribute("data-color");
     }
+    setAccentColor(color);
   }, []);
 
   function handleColorChange(color: string) {
@@ -97,8 +115,10 @@ export function SettingsManager() {
   }
 
   const COLORS = [
-    { id: "default", name: "翡翠绿 (Emerald)", code: "#10b981" },
-    { id: "cyan", name: "电弧青 (Electric Cyan)", code: "#06b6d4" },
+    { id: "default", name: "经典蓝", code: "#0A84FF" },
+    { id: "yonex-green", name: "御三家-绿", code: "#00A84F" },
+    { id: "victor-blue", name: "御三家-蓝", code: "#0E2F90" },
+    { id: "lining-red", name: "御三家-红", code: "#E42D36" },
     { id: "silver", name: "曜岩银 (Obsidian Silver)", code: "#d4d4d8" },
     { id: "orange", name: "工业橙 (Industrial Orange)", code: "#f97316" },
     { id: "purple", name: "虚空紫 (Hyper Purple)", code: "#8b5cf6" },
@@ -115,21 +135,41 @@ export function SettingsManager() {
   const [catalogCategoryName, setCatalogCategoryName] = useState("");
   const [catalogSaving, setCatalogSaving] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<ProjectCatalogForm | null>(null);
+  const debouncedCatalogQuery = useDebouncedValue(catalogQuery, 220);
 
   const { data: categoryData, mutate: mutateCategories } =
-    useSWR<{ items: Category[] }>("/api/settings/categories", fetcher);
+    useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
+      fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
+      revalidateIfStale: !fallbackCategories,
+      revalidateOnMount: !fallbackCategories
+    });
   const { data: brandData, mutate: mutateBrands } =
-    useSWR<{ items: Brand[] }>("/api/settings/brands", fetcher);
+    useSWR<{ items: Brand[] }>("/api/settings/brands", fetcher, {
+      fallbackData: fallbackBrands ? { items: fallbackBrands } : undefined,
+      revalidateIfStale: !fallbackBrands,
+      revalidateOnMount: !fallbackBrands
+    });
   const { data: dimensionData, mutate: mutateDimensions } =
-    useSWR<{ items: RatingDimension[] }>("/api/settings/rating-dimensions", fetcher);
+    useSWR<{ items: RatingDimension[] }>("/api/settings/rating-dimensions", fetcher, {
+      fallbackData: fallbackDimensions ? { items: fallbackDimensions } : undefined,
+      revalidateIfStale: !fallbackDimensions,
+      revalidateOnMount: !fallbackDimensions
+    });
   const projectCatalogUrl = useMemo(() => {
     const params = new URLSearchParams();
-    if (catalogQuery.trim()) params.set("q", catalogQuery.trim());
+    if (debouncedCatalogQuery.trim()) params.set("q", debouncedCatalogQuery.trim());
     if (catalogCategoryName) params.set("categoryName", catalogCategoryName);
     return `/api/settings/project-catalog?${params.toString()}`;
-  }, [catalogCategoryName, catalogQuery]);
+  }, [catalogCategoryName, debouncedCatalogQuery]);
   const { data: projectCatalogData, error: projectCatalogError, mutate: mutateProjectCatalog } =
-    useSWR<{ items: ProjectCatalogItem[] }>(projectCatalogUrl, fetcher);
+    useSWR<{ items: ProjectCatalogItem[] }>(projectCatalogUrl, fetcher, {
+      fallbackData:
+        fallbackProjectCatalog && !debouncedCatalogQuery.trim() && !catalogCategoryName
+          ? { items: fallbackProjectCatalog }
+          : undefined,
+      revalidateIfStale: !(fallbackProjectCatalog && !debouncedCatalogQuery.trim() && !catalogCategoryName),
+      revalidateOnMount: !(fallbackProjectCatalog && !debouncedCatalogQuery.trim() && !catalogCategoryName)
+    });
 
   const categories = categoryData?.items ?? [];
   const brands = brandData?.items ?? [];

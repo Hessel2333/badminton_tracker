@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { buildProjectCatalogEntries, buildProjectCatalogEntryKey } from "@/lib/project-catalog";
+import { buildProjectCatalogEntryKey } from "@/lib/project-catalog";
 import { requireSession } from "@/lib/server/auth-guard";
+import {
+  PROJECT_CATALOG_TAG,
+  compareProjectCatalogItems,
+  getCachedProjectCatalogEntries
+} from "@/lib/server/reference-data";
 import { z } from "zod";
 
 const imageUrlSchema = z
@@ -33,23 +39,6 @@ function matchesQuery(item: { name: string; brandName: string; modelCode?: strin
   return haystack.includes(query.toLowerCase());
 }
 
-function compareCatalogItems(
-  a: { categoryName: string; brandName: string; suggestedUnitPriceCny?: number; modelCode?: string; name: string },
-  b: { categoryName: string; brandName: string; suggestedUnitPriceCny?: number; modelCode?: string; name: string }
-) {
-  const collator = new Intl.Collator("zh-Hans-CN");
-  const categoryDiff = collator.compare(a.categoryName, b.categoryName);
-  if (categoryDiff !== 0) return categoryDiff;
-  const brandDiff = collator.compare(a.brandName, b.brandName);
-  if (brandDiff !== 0) return brandDiff;
-  const aPrice = typeof a.suggestedUnitPriceCny === "number" ? a.suggestedUnitPriceCny : Number.POSITIVE_INFINITY;
-  const bPrice = typeof b.suggestedUnitPriceCny === "number" ? b.suggestedUnitPriceCny : Number.POSITIVE_INFINITY;
-  if (aPrice !== bPrice) return aPrice - bPrice;
-  const modelDiff = collator.compare(a.modelCode ?? "", b.modelCode ?? "");
-  if (modelDiff !== 0) return modelDiff;
-  return collator.compare(a.name, b.name);
-}
-
 export async function GET(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
@@ -57,13 +46,9 @@ export async function GET(request: NextRequest) {
   const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
   const categoryName = (request.nextUrl.searchParams.get("categoryName") ?? "").trim();
 
-  const overrides = await prisma.projectCatalogOverride.findMany({
-    orderBy: [{ updatedAt: "desc" }]
-  });
-
-  const items = buildProjectCatalogEntries(overrides)
+  const items = (await getCachedProjectCatalogEntries())
     .filter((item) => (!categoryName || item.categoryName === categoryName) && matchesQuery(item, query))
-    .sort(compareCatalogItems);
+    .sort(compareProjectCatalogItems);
 
   return NextResponse.json({ items });
 }
@@ -136,6 +121,8 @@ export async function PUT(request: NextRequest) {
 
       return upserted;
     });
+
+    revalidateTag(PROJECT_CATALOG_TAG);
 
     return NextResponse.json(saved);
   } catch (error) {

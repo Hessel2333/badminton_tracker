@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") ?? undefined;
   const page = Number(searchParams.get("page") ?? "1");
   const pageSize = Math.min(200, Number(searchParams.get("pageSize") ?? "50"));
+  const includeTotal = searchParams.get("includeTotal") === "1";
 
   const where: Prisma.PurchaseRecordWhereInput = {
     brandId,
@@ -106,8 +107,7 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  const [items, total] = await Promise.all([
-    prisma.purchaseRecord.findMany({
+  const items = await prisma.purchaseRecord.findMany({
       where,
       select: {
         id: true,
@@ -144,9 +144,9 @@ export async function GET(request: NextRequest) {
       orderBy: { purchaseDate: "desc" },
       skip: (Math.max(page, 1) - 1) * pageSize,
       take: pageSize
-    }),
-    prisma.purchaseRecord.count({ where })
-  ]);
+    });
+
+  const total = includeTotal ? await prisma.purchaseRecord.count({ where }) : undefined;
 
   return NextResponse.json({
     page,

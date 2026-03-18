@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { ShieldCheck } from "lucide-react";
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { currency, dateText } from "@/lib/utils";
@@ -210,10 +211,12 @@ export function GearWallManager({
                 <div className="space-y-4">
                   <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-panel shadow-inner">
                     {item.coverImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <SmartImage
                         src={item.coverImageUrl}
                         alt={item.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        priority={index < 4}
                         loading={index < 8 ? "eager" : "lazy"}
                         className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                       />
