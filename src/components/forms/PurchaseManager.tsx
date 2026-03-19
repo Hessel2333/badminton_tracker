@@ -22,6 +22,7 @@ import {
 import { getPurchaseChannelOptions } from "@/lib/purchase-options";
 import { currency, dateText } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSessionStorageState } from "@/hooks/useSessionStorageState";
 
 type Category = {
   id: string;
@@ -92,6 +93,10 @@ type WishlistSourceItem = {
 };
 
 type PurchaseManagerMode = "entry" | "ledger" | "all";
+
+function isLibraryView(value: unknown): value is "list" | "card" {
+  return value === "list" || value === "card";
+}
 
 const STATUS_LABELS: Record<PurchaseRow["itemStatus"], string> = {
   IN_USE: "在用",
@@ -228,7 +233,11 @@ export function PurchaseManager({
   const [form, setForm] = useState<PurchaseForm>(initialForm);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryCategoryId, setLibraryCategoryId] = useState("");
-  const [libraryView, setLibraryView] = useState<"list" | "card">("card");
+  const [libraryView, setLibraryView] = useSessionStorageState<"list" | "card">(
+    `purchase-library-view:${mode}`,
+    "card",
+    isLibraryView
+  );
   const [wishlistOnly, setWishlistOnly] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogSuggestion | null>(null);

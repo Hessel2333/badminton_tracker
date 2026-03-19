@@ -12,6 +12,7 @@ import { SmartImage } from "@/components/ui/SmartImage";
 import { ShieldCheck } from "lucide-react";
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { currency, dateText } from "@/lib/utils";
+import { useSessionStorageState } from "@/hooks/useSessionStorageState";
 
 type CategoryFilter = "ALL" | "羽毛球" | "球鞋" | "球拍" | "其他";
 type SortOption =
@@ -67,6 +68,10 @@ import { ControlPanel } from "@/components/ui/ControlPanel";
 
 const CATEGORY_OPTIONS = CATEGORY_FILTERS.map(f => ({ id: f.key, label: f.label }));
 
+function isCategoryFilter(value: unknown): value is CategoryFilter {
+  return typeof value === "string" && CATEGORY_FILTERS.some((item) => item.key === value);
+}
+
 export function GearWallManager({
   initialItems
 }: {
@@ -74,7 +79,11 @@ export function GearWallManager({
 }) {
   const router = useRouter();
   const prefetched = useRef<Set<string>>(new Set());
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("ALL");
+  const [categoryFilter, setCategoryFilter] = useSessionStorageState<CategoryFilter>(
+    "gear-wall-category-filter",
+    "ALL",
+    isCategoryFilter
+  );
   const [sortBy, setSortBy] = useState<SortOption>("recent_purchase_desc");
 
   function prefetchDetail(id: string) {

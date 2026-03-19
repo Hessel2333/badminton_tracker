@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSessionStorageState } from "@/hooks/useSessionStorageState";
 
 type Category = {
   id: string;
@@ -68,6 +69,10 @@ import { Database, Package, ShieldCheck, Tag, Sparkles } from "lucide-react";
 
 type ActiveTab = "catalog" | "taxonomy" | "advanced";
 
+function isActiveTab(value: unknown): value is ActiveTab {
+  return value === "catalog" || value === "taxonomy" || value === "advanced";
+}
+
 const TAB_OPTIONS = [
   { id: "catalog", label: "项目库", icon: <Package size={14} /> },
   { id: "taxonomy", label: "分类与别名", icon: <Tag size={14} /> },
@@ -85,7 +90,11 @@ export function SettingsManager({
   fallbackDimensions?: RatingDimension[];
   fallbackProjectCatalog?: ProjectCatalogItem[];
 } = {}) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("catalog");
+  const [activeTab, setActiveTab] = useSessionStorageState<ActiveTab>(
+    "settings-active-tab",
+    "catalog",
+    isActiveTab
+  );
   const [accentColor, setAccentColor] = useState<string>("default");
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { ImageDown, Sparkles, Tag, Database, Package } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PEGBOARD_LAYOUT_VERSION, type PegboardLayoutMode, type PegboardLayoutSnapshot, type PegboardLayoutStore } from "@/lib/pegboard-layout";
+import { useSessionStorageState } from "@/hooks/useSessionStorageState";
 import { cn } from "@/lib/utils";
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -864,7 +865,11 @@ export function GearPegboardManager({
   const [showBounds, setShowBounds] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useSessionStorageState<boolean>(
+    "gear-pegboard-show-history",
+    false,
+    (value): value is boolean => typeof value === "boolean"
+  );
   const [savedLayouts, setSavedLayouts] = useState<PegboardLayoutStore>(initialSavedLayouts);
 
   useEffect(() => {
