@@ -2,45 +2,16 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { EChart } from "@/components/charts/EChart";
 import { Card } from "@/components/ui/Card";
 import { currency } from "@/lib/utils";
 import { chartBase, CHART_COLORS, CHART_PRIMARY, CHART_SECONDARY, CHART_TERTIARY } from "@/lib/chart-theme";
-
-type WishlistCountItem = {
-  status: "WANT" | "WATCHING" | "PURCHASED" | "DROPPED";
-  count: number;
-};
-
-type AnalyticsData = {
-  range?: string;
-  availableYears?: number[];
-  trend?: Array<{ bucket: string; amount: number }>;
-  brandShare?: Array<{ brand: string; amount: number }>;
-  categoryShare?: Array<{ category: string; amount: number }>;
-  frequency?: Array<{ bucket: string; count: number }>;
-  shuttleInsights?: {
-    longestHold: { name: string | null; days?: number | null; purchaseDate?: string | null; usedUpAt?: string | null };
-    largestStock: { name: string | null; quantity?: number | null; purchaseDate?: string | null };
-    favoritePurchase: { name: string | null; quantity?: number | null };
-    oldestCurrentStock: { name: string | null; days?: number | null; quantity?: number | null; purchaseDate?: string | null };
-  };
-  wishlistCounts?: WishlistCountItem[];
-  gearRanking?: Array<{ id: string; name: string; overall: number | string }>;
-};
+import type { AnalyticsData } from "@/lib/server/analytics-data";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-const EChart = dynamic(
-  () => import("@/components/charts/EChart").then((m) => ({ default: m.EChart })),
-  {
-    ssr: false,
-    loading: () => <div className="h-80 animate-pulse rounded-2xl bg-panel" />,
-  }
-);
 
 /** 判断当前是否深色模式（读取 html[data-theme]） */
 function useIsDark() {
@@ -63,6 +34,9 @@ export function AnalyticsBoard({
   const { data: fullData, isLoading: loading, error: fetchError } =
     useSWR<AnalyticsData>(`/api/analytics/full?range=${range}`, fetcher, {
       fallbackData: range === defaultRange ? fallbackData : undefined,
+      revalidateOnMount: !(range === defaultRange && fallbackData),
+      revalidateIfStale: range !== defaultRange,
+      keepPreviousData: true,
     });
   const error = fetchError ? "加载分析数据失败" : null;
 

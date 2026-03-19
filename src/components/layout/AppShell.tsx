@@ -21,6 +21,15 @@ import { mutate } from "swr";
 
 import { cn } from "@/lib/utils";
 
+function analyticsPrefetchKeys() {
+  const currentYear = new Date().getFullYear();
+  return [
+    `/api/analytics/full?range=${currentYear}`,
+    `/api/analytics/full?range=${currentYear - 1}`,
+    "/api/analytics/full?range=all"
+  ];
+}
+
 const nav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard },
   {
@@ -36,7 +45,7 @@ const nav = [
     dataKeys: ["/api/purchases?pageSize=80", "/api/settings/categories", "/api/wishlist"]
   },
   { href: "/gear-wall", label: "档案陈列", icon: ShieldCheck, matchPaths: ["/gear-wall", "/gear-board"] },
-  { href: "/analytics", label: "分析看板", icon: BarChart3, dataKeys: ["/api/analytics/full?range=all"] },
+  { href: "/analytics", label: "分析看板", icon: BarChart3, dataKeys: analyticsPrefetchKeys() },
   {
     href: "/settings",
     label: "设置",

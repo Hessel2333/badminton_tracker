@@ -758,7 +758,7 @@ export function PurchaseManager({
               {visibleLibraryItems.length ? (
                 libraryView === "list" ? (
                   <div className="divide-y divide-border">
-                    {visibleLibraryItems.map((item) => {
+                    {visibleLibraryItems.map((item, index) => {
                       const latestPrice = Number(item.suggestedUnitPriceCny ?? Number.NaN);
                       const recentPurchasedAt = latestPurchaseAtByCatalogKey.get(catalogSuggestionKey(item));
                       const inWishlist = wishlistItemByKey.has(wishlistCatalogKey(item));
@@ -775,6 +775,8 @@ export function PurchaseManager({
                                 alt={item.name}
                                 fill
                                 sizes="56px"
+                                priority={index < 6}
+                                loading={index < 10 ? "eager" : "lazy"}
                                 className="object-contain"
                               />
                             </div>
@@ -831,7 +833,7 @@ export function PurchaseManager({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                    {visibleLibraryItems.map((item) => {
+                    {visibleLibraryItems.map((item, index) => {
                       const latestPrice = Number(item.suggestedUnitPriceCny ?? Number.NaN);
                       const recentPurchasedAt = latestPurchaseAtByCatalogKey.get(catalogSuggestionKey(item));
                       const inWishlist = wishlistItemByKey.has(wishlistCatalogKey(item));
@@ -849,6 +851,8 @@ export function PurchaseManager({
                                   alt={item.name}
                                   fill
                                   sizes="(max-width: 640px) 50vw, (max-width: 1280px) 25vw, 20vw"
+                                  priority={index < 4}
+                                  loading={index < 8 ? "eager" : "lazy"}
                                   className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                                 />
                               ) : (
