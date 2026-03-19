@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 import { purchaseSchema } from "@/lib/validators/purchase";
 
 type Context = {
@@ -101,6 +102,8 @@ export async function PUT(request: NextRequest, context: Context) {
       return updated;
     });
 
+    await revalidatePurchaseDerivedData();
+
     return NextResponse.json(item);
   } catch (error) {
     if ((error as Error).message === "NOT_FOUND") {
@@ -120,6 +123,7 @@ export async function DELETE(_request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
     await prisma.purchaseRecord.delete({ where: { id } });
+    await revalidatePurchaseDerivedData();
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

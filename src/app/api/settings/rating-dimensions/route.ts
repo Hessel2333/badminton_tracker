@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
-import { getCachedRatingDimensions, RATING_DIMENSIONS_TAG } from "@/lib/server/reference-data";
+import { createRequestMetrics } from "@/lib/server/perf";
+import { revalidateReferenceData } from "@/lib/server/revalidate-app-data";
+import { getCachedRatingDimensions } from "@/lib/server/reference-data";
 
 const updateSchema = z.object({
   items: z.array(
@@ -20,12 +21,19 @@ const updateSchema = z.object({
 });
 
 export async function GET() {
-  const auth = await requireSession();
+  const metrics = createRequestMetrics("api.settings.rating-dimensions");
+  const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
 
-  const items = await getCachedRatingDimensions();
+  const items = await metrics.track("cache", () => getCachedRatingDimensions());
+  metrics.log();
 
-  return NextResponse.json({ items });
+  return NextResponse.json(
+    { items },
+    {
+      headers: metrics.headers()
+    }
+  );
 }
 
 export async function PUT(request: NextRequest) {
@@ -60,7 +68,7 @@ export async function PUT(request: NextRequest) {
     )
   );
 
-  revalidateTag(RATING_DIMENSIONS_TAG);
+  revalidateReferenceData();
 
   return NextResponse.json({ items: result });
 }

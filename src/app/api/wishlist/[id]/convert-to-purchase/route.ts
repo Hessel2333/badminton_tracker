@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData, revalidateWishlistDerivedData } from "@/lib/server/revalidate-app-data";
 import { wishlistConvertSchema } from "@/lib/validators/wishlist";
 
 type Context = {
@@ -112,6 +113,8 @@ export async function POST(request: NextRequest, context: Context) {
       transition
     };
   });
+
+  await Promise.all([revalidatePurchaseDerivedData(), revalidateWishlistDerivedData()]);
 
   return NextResponse.json(result, { status: 201 });
 }

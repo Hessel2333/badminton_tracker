@@ -7,12 +7,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { EChart } from "@/components/charts/EChart";
 import { Card } from "@/components/ui/Card";
+import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { currency } from "@/lib/utils";
 import { chartBase, CHART_COLORS, CHART_PRIMARY, CHART_SECONDARY, CHART_TERTIARY } from "@/lib/chart-theme";
 import type { AnalyticsData } from "@/lib/server/analytics-data";
 import { useSessionStorageState } from "@/hooks/useSessionStorageState";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 /** 判断当前是否深色模式（读取 html[data-theme]） */
 function useIsDark() {
@@ -58,7 +57,7 @@ export function AnalyticsBoard({
   }, [defaultRange, range, setStoredRange, storedRange]);
 
   const { data: fullData, isLoading: loading, error: fetchError } =
-    useSWR<AnalyticsData>(`/api/analytics/full?range=${range}`, fetcher, {
+    useSWR<AnalyticsData>(`/api/analytics/full?range=${range}`, fetchJsonWithPerf, {
       fallbackData: range === defaultRange ? fallbackData : undefined,
       revalidateOnMount: !(range === defaultRange && fallbackData),
       revalidateIfStale: false,

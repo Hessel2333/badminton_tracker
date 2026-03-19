@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
-import { CATEGORIES_TAG, getCachedCategories } from "@/lib/server/reference-data";
+import { createRequestMetrics } from "@/lib/server/perf";
+import { revalidateReferenceData } from "@/lib/server/revalidate-app-data";
+import { getCachedCategories } from "@/lib/server/reference-data";
 
 const categorySchema = z.object({
   name: z.string().min(1).max(40),
@@ -12,11 +13,18 @@ const categorySchema = z.object({
 });
 
 export async function GET() {
-  const auth = await requireSession();
+  const metrics = createRequestMetrics("api.settings.categories");
+  const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
 
-  const items = await getCachedCategories();
-  return NextResponse.json({ items });
+  const items = await metrics.track("cache", () => getCachedCategories());
+  metrics.log();
+  return NextResponse.json(
+    { items },
+    {
+      headers: metrics.headers()
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -37,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
   });
 
-  revalidateTag(CATEGORIES_TAG);
+  revalidateReferenceData();
 
   return NextResponse.json(item, { status: 201 });
 }

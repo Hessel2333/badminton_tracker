@@ -1,10 +1,13 @@
+import { unstable_cache } from "next/cache";
 import { ItemStatus } from "@prisma/client";
 
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/server/number";
 
-export async function getArchiveItems(): Promise<GearWallItem[]> {
+export const ARCHIVE_ITEMS_TAG = "archive-items";
+
+async function queryArchiveItems(): Promise<GearWallItem[]> {
   const items = await prisma.gearItem.findMany({
     where: {
       purchases: {
@@ -69,3 +72,8 @@ export async function getArchiveItems(): Promise<GearWallItem[]> {
     }))
   }));
 }
+
+export const getArchiveItems = unstable_cache(queryArchiveItems, ["archive-items"], {
+  tags: [ARCHIVE_ITEMS_TAG],
+  revalidate: 60
+});

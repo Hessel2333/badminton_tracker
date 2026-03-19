@@ -5,6 +5,7 @@ import { canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
+import { revalidateWishlistDerivedData } from "@/lib/server/revalidate-app-data";
 import { wishlistSchema } from "@/lib/validators/wishlist";
 
 type Context = {
@@ -59,6 +60,8 @@ export async function PUT(request: NextRequest, context: Context) {
     }
   });
 
+  await revalidateWishlistDerivedData();
+
   return NextResponse.json(item);
 }
 
@@ -71,6 +74,8 @@ export async function DELETE(_: NextRequest, context: Context) {
   await prisma.wishlistItem.delete({
     where: { id }
   });
+
+  await revalidateWishlistDerivedData();
 
   return NextResponse.json({ ok: true });
 }

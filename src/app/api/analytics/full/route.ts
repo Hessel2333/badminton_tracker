@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireSession } from "@/lib/server/auth-guard";
 import { getCachedAnalyticsFullData } from "@/lib/server/analytics-data";
+import { createRequestMetrics } from "@/lib/server/perf";
 import { rangeSchema } from "@/lib/validators/analytics";
 
 export async function GET(request: NextRequest) {
-  const auth = await requireSession();
+  const metrics = createRequestMetrics("api.analytics.full");
+  const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
 
   const parsed = rangeSchema.safeParse({
@@ -17,6 +19,10 @@ export async function GET(request: NextRequest) {
   }
 
   const range = parsed.data.range;
+  const payload = await metrics.track("data", () => getCachedAnalyticsFullData(range));
+  metrics.log({ range });
 
-  return NextResponse.json(await getCachedAnalyticsFullData(range));
+  return NextResponse.json(payload, {
+    headers: metrics.headers()
+  });
 }

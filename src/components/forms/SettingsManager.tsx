@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Select } from "@/components/ui/Select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
@@ -60,8 +61,6 @@ type ProjectCatalogForm = {
   imageUrl: string;
   tagsText: string;
 };
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ControlPanel } from "@/components/ui/ControlPanel";
@@ -147,19 +146,19 @@ export function SettingsManager({
   const debouncedCatalogQuery = useDebouncedValue(catalogQuery, 220);
 
   const { data: categoryData, mutate: mutateCategories } =
-    useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
+    useSWR<{ items: Category[] }>("/api/settings/categories", fetchJsonWithPerf, {
       fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
       revalidateIfStale: !fallbackCategories,
       revalidateOnMount: !fallbackCategories
     });
   const { data: brandData, mutate: mutateBrands } =
-    useSWR<{ items: Brand[] }>("/api/settings/brands", fetcher, {
+    useSWR<{ items: Brand[] }>("/api/settings/brands", fetchJsonWithPerf, {
       fallbackData: fallbackBrands ? { items: fallbackBrands } : undefined,
       revalidateIfStale: !fallbackBrands,
       revalidateOnMount: !fallbackBrands
     });
   const { data: dimensionData, mutate: mutateDimensions } =
-    useSWR<{ items: RatingDimension[] }>("/api/settings/rating-dimensions", fetcher, {
+    useSWR<{ items: RatingDimension[] }>("/api/settings/rating-dimensions", fetchJsonWithPerf, {
       fallbackData: fallbackDimensions ? { items: fallbackDimensions } : undefined,
       revalidateIfStale: !fallbackDimensions,
       revalidateOnMount: !fallbackDimensions
@@ -171,7 +170,7 @@ export function SettingsManager({
     return `/api/settings/project-catalog?${params.toString()}`;
   }, [catalogCategoryName, debouncedCatalogQuery]);
   const { data: projectCatalogData, error: projectCatalogError, mutate: mutateProjectCatalog } =
-    useSWR<{ items: ProjectCatalogItem[] }>(projectCatalogUrl, fetcher, {
+    useSWR<{ items: ProjectCatalogItem[] }>(projectCatalogUrl, fetchJsonWithPerf, {
       fallbackData:
         fallbackProjectCatalog && !debouncedCatalogQuery.trim() && !catalogCategoryName
           ? { items: fallbackProjectCatalog }

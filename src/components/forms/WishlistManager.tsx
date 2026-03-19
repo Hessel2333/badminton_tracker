@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { currency } from "@/lib/utils";
 
 type Category = {
@@ -60,8 +61,6 @@ const formInit = {
   notes: ""
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
 export function WishlistManager({
   fallbackWishlist,
   fallbackCategories
@@ -75,13 +74,13 @@ export function WishlistManager({
   const [convertTarget, setConvertTarget] = useState<{ item: WishlistItem; price: string } | null>(null);
 
   const { data: wishlistData, mutate: mutateWishlist } =
-    useSWR<{ items: WishlistItem[] }>("/api/wishlist", fetcher, {
+    useSWR<{ items: WishlistItem[] }>("/api/wishlist", fetchJsonWithPerf, {
       fallbackData: fallbackWishlist ? { items: fallbackWishlist } : undefined,
       revalidateIfStale: !fallbackWishlist,
       revalidateOnMount: !fallbackWishlist
     });
   const { data: categoryData } =
-    useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
+    useSWR<{ items: Category[] }>("/api/settings/categories", fetchJsonWithPerf, {
       fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
       revalidateIfStale: !fallbackCategories,
       revalidateOnMount: !fallbackCategories

@@ -7,6 +7,7 @@ import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 
 function parseCSV(csv: string) {
   const rows = csv
@@ -128,6 +129,8 @@ export async function POST(request: NextRequest) {
 
     return results;
   });
+
+  await revalidatePurchaseDerivedData();
 
   return NextResponse.json({ count: created.length });
 }

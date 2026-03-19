@@ -5,6 +5,9 @@ import { canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
+import { getCachedWishlistRecordsByStatus, serializeWishlistItem } from "@/lib/server/commerce-data";
+import { createRequestMetrics } from "@/lib/server/perf";
+import { revalidateWishlistDerivedData } from "@/lib/server/revalidate-app-data";
 import { wishlistSchema } from "@/lib/validators/wishlist";
 
 export async function POST(request: NextRequest) {
@@ -52,11 +55,14 @@ export async function POST(request: NextRequest) {
     }
   });
 
+  await revalidateWishlistDerivedData();
+
   return NextResponse.json(item, { status: 201 });
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireSession();
+  const metrics = createRequestMetrics("api.wishlist.get");
+  const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
 
   const statusParam = request.nextUrl.searchParams.get("status");
@@ -65,16 +71,13 @@ export async function GET(request: NextRequest) {
       ? (statusParam as WishlistStatus)
       : undefined;
 
-  const items = await prisma.wishlistItem.findMany({
-    where: {
-      status
-    },
-    include: {
-      brand: true,
-      category: true
-    },
-    orderBy: [{ priority: "asc" }, { createdAt: "desc" }]
-  });
+  const items = await metrics.track("cache", () => getCachedWishlistRecordsByStatus(status));
+  metrics.log({ status: status ?? "all" });
 
-  return NextResponse.json({ items });
+  return NextResponse.json(
+    { items: items.map(serializeWishlistItem) },
+    {
+      headers: metrics.headers()
+    }
+  );
 }

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { findLocalImageUrl } from "@/lib/server/local-image-library";
+import { revalidateGearDerivedData } from "@/lib/server/revalidate-app-data";
 import { gearCreateSchema } from "@/lib/validators/gear";
 
 export async function POST(request: NextRequest) {
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
       }
     });
   });
+
+  await revalidateGearDerivedData();
 
   return NextResponse.json(created, { status: 201 });
 }

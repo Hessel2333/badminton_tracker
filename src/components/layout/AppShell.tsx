@@ -62,6 +62,54 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.localStorage.setItem("theme", nextTheme);
   }, []);
 
+  useEffect(() => {
+    const startedAt = performance.now();
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        console.info(`[perf] route ${pathname} settled=${(performance.now() - startedAt).toFixed(1)}ms`);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(raf1);
+      if (raf2) window.cancelAnimationFrame(raf2);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.sessionStorage.getItem("low-freq-prefetch-v1") === "1") return;
+
+    window.sessionStorage.setItem("low-freq-prefetch-v1", "1");
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      const urls = [
+        "/api/settings/categories",
+        "/api/settings/brands",
+        "/api/settings/rating-dimensions"
+      ] as const;
+
+      for (const url of urls) {
+        try {
+          await fetch(url, {
+            signal: controller.signal,
+            credentials: "same-origin"
+          });
+        } catch (error) {
+          if ((error as Error).name !== "AbortError") {
+            console.warn(`[perf] low-frequency prefetch failed: ${url}`, error);
+          }
+        }
+      }
+    }, 1200);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
   function prefetchNavItem(href: string) {
     if (!prefetchedRoutes.current.has(href)) {
       prefetchedRoutes.current.add(href);

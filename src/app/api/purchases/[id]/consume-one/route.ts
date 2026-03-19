@@ -4,6 +4,7 @@ import { ItemStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 
 type Context = {
   params: Promise<{ id: string }>;
@@ -97,6 +98,8 @@ export async function POST(_request: NextRequest, context: Context) {
 
       return { mode: "split", updated, consumed };
     });
+
+    await revalidatePurchaseDerivedData();
 
     return NextResponse.json(result);
   } catch (error) {

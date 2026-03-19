@@ -14,6 +14,7 @@ import { SmartImage } from "@/components/ui/SmartImage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Textarea } from "@/components/ui/Textarea";
+import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import {
   canonicalOptionalBrandDisplayName,
   canonicalProductKey,
@@ -119,8 +120,6 @@ const initialForm: PurchaseForm = {
   itemStatus: "IN_USE" as PurchaseRow["itemStatus"],
   notes: ""
 };
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function extractApiErrorMessage(payload: unknown) {
   if (!payload || typeof payload !== "object") return "未知错误";
@@ -252,13 +251,13 @@ export function PurchaseManager({
   const debouncedLibraryQuery = useDebouncedValue(libraryQuery, 220);
 
   const { data: purchaseData, isLoading: purchaseLoading, mutate: mutatePurchases } =
-    useSWR<{ items: PurchaseRow[] }>("/api/purchases?pageSize=80", fetcher, {
+    useSWR<{ items: PurchaseRow[] }>("/api/purchases?pageSize=80", fetchJsonWithPerf, {
       fallbackData: fallbackPurchases ? { items: fallbackPurchases } : undefined,
       revalidateIfStale: !fallbackPurchases,
       revalidateOnMount: !fallbackPurchases
     });
   const { data: categoryData } =
-    useSWR<{ items: Category[] }>("/api/settings/categories", fetcher, {
+    useSWR<{ items: Category[] }>("/api/settings/categories", fetchJsonWithPerf, {
       fallbackData: fallbackCategories ? { items: fallbackCategories } : undefined,
       revalidateIfStale: !fallbackCategories,
       revalidateOnMount: !fallbackCategories
@@ -272,7 +271,7 @@ export function PurchaseManager({
     return `/api/catalog?${params.toString()}`;
   }, [debouncedLibraryQuery, libraryCategoryId]);
   const { data: libraryData, isLoading: libraryLoading } =
-    useSWR<{ items: CatalogSuggestion[] }>(libraryUrl, fetcher, {
+    useSWR<{ items: CatalogSuggestion[] }>(libraryUrl, fetchJsonWithPerf, {
       fallbackData:
         fallbackCatalogItems && !libraryCategoryId && !debouncedLibraryQuery.trim()
           ? { items: fallbackCatalogItems }
@@ -281,7 +280,7 @@ export function PurchaseManager({
       revalidateOnMount: !(fallbackCatalogItems && !libraryCategoryId && !debouncedLibraryQuery.trim())
     });
   const { data: wishlistData, mutate: mutateWishlist } =
-    useSWR<{ items: WishlistSourceItem[] }>("/api/wishlist", fetcher, {
+    useSWR<{ items: WishlistSourceItem[] }>("/api/wishlist", fetchJsonWithPerf, {
       fallbackData: fallbackWishlist ? { items: fallbackWishlist } : undefined,
       revalidateIfStale: !fallbackWishlist,
       revalidateOnMount: !fallbackWishlist

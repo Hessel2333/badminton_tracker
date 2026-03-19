@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 
 const statusSchema = z.object({
   itemStatus: z.enum(["IN_USE", "USED_UP", "WORN_OUT", "STORED"])
@@ -74,6 +75,8 @@ export async function PATCH(request: NextRequest, context: Context) {
 
       return updatedRecord;
     });
+
+    await revalidatePurchaseDerivedData();
 
     return NextResponse.json(updated);
   } catch (error) {

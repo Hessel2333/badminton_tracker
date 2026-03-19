@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { buildProjectCatalogEntryKey } from "@/lib/project-catalog";
 import { requireSession } from "@/lib/server/auth-guard";
 import {
-  PROJECT_CATALOG_TAG,
   compareProjectCatalogItems,
   getCachedProjectCatalogEntries
 } from "@/lib/server/reference-data";
+import { revalidateReferenceData } from "@/lib/server/revalidate-app-data";
 import { z } from "zod";
 
 const imageUrlSchema = z
@@ -122,7 +121,7 @@ export async function PUT(request: NextRequest) {
       return upserted;
     });
 
-    revalidateTag(PROJECT_CATALOG_TAG);
+    revalidateReferenceData();
 
     return NextResponse.json(saved);
   } catch (error) {

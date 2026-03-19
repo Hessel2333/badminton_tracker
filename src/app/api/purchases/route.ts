@@ -4,9 +4,16 @@ import { Prisma } from "@prisma/client";
 import { calcTotalPrice, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import {
+  DEFAULT_PURCHASE_PAGE_SIZE,
+  getCachedDefaultPurchaseRecords,
+  serializePurchaseRow
+} from "@/lib/server/commerce-data";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
+import { createRequestMetrics } from "@/lib/server/perf";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 import { purchaseSchema } from "@/lib/validators/purchase";
 
 export async function POST(request: NextRequest) {
@@ -76,6 +83,8 @@ export async function POST(request: NextRequest) {
       return created;
     });
 
+    await revalidatePurchaseDerivedData();
+
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
     return NextResponse.json(
@@ -86,7 +95,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireSession();
+  const metrics = createRequestMetrics("api.purchases.get");
+  const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
 
   const { searchParams } = request.nextUrl;
@@ -95,8 +105,16 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from") ?? undefined;
   const to = searchParams.get("to") ?? undefined;
   const page = Number(searchParams.get("page") ?? "1");
-  const pageSize = Math.min(200, Number(searchParams.get("pageSize") ?? "50"));
+  const pageSize = Math.min(200, Number(searchParams.get("pageSize") ?? String(DEFAULT_PURCHASE_PAGE_SIZE)));
   const includeTotal = searchParams.get("includeTotal") === "1";
+  const shouldUseDefaultCache =
+    !brandId &&
+    !categoryId &&
+    !from &&
+    !to &&
+    !includeTotal &&
+    Math.max(page, 1) === 1 &&
+    pageSize === DEFAULT_PURCHASE_PAGE_SIZE;
 
   const where: Prisma.PurchaseRecordWhereInput = {
     brandId,
@@ -107,7 +125,22 @@ export async function GET(request: NextRequest) {
     }
   };
 
-  const items = await prisma.purchaseRecord.findMany({
+  if (shouldUseDefaultCache) {
+    const items = await metrics.track("cache", () => getCachedDefaultPurchaseRecords());
+    metrics.log({ cached: true, pageSize });
+    return NextResponse.json(
+      {
+        page,
+        pageSize,
+        items: items.map(serializePurchaseRow)
+      },
+      {
+        headers: metrics.headers()
+      }
+    );
+  }
+
+  const items = await metrics.track("query", () => prisma.purchaseRecord.findMany({
       where,
       select: {
         id: true,
@@ -144,14 +177,20 @@ export async function GET(request: NextRequest) {
       orderBy: { purchaseDate: "desc" },
       skip: (Math.max(page, 1) - 1) * pageSize,
       take: pageSize
-    });
+    }));
 
-  const total = includeTotal ? await prisma.purchaseRecord.count({ where }) : undefined;
+  const total = includeTotal ? await metrics.track("count", () => prisma.purchaseRecord.count({ where })) : undefined;
+  metrics.log({ cached: false, pageSize, includeTotal });
 
-  return NextResponse.json({
-    page,
-    pageSize,
-    total,
-    items
-  });
+  return NextResponse.json(
+    {
+      page,
+      pageSize,
+      total,
+      items: items.map(serializePurchaseRow)
+    },
+    {
+      headers: metrics.headers()
+    }
+  );
 }

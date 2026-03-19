@@ -1,4 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import {
+  getCachedDefaultPurchaseRecords,
+  getCachedWishlistRecords,
+  serializePurchaseRow,
+  serializeWishlistItem
+} from "@/lib/server/commerce-data";
 import { toNumber } from "@/lib/server/number";
 import {
   getCachedBrands,
@@ -7,55 +12,13 @@ import {
   getCachedRatingDimensions
 } from "@/lib/server/reference-data";
 
-const PURCHASE_PAGE_SIZE = 80;
 const PROJECT_LIBRARY_LIMIT = 240;
 
 export async function getPurchasePageData() {
   const [purchases, categories, wishlistItems, projectCatalogEntries] = await Promise.all([
-    prisma.purchaseRecord.findMany({
-      select: {
-        id: true,
-        brandId: true,
-        categoryId: true,
-        itemNameSnapshot: true,
-        unitPriceCny: true,
-        quantity: true,
-        totalPriceCny: true,
-        itemStatus: true,
-        purchaseDate: true,
-        channel: true,
-        notes: true,
-        brand: {
-          select: {
-            name: true
-          }
-        },
-        gearItem: {
-          select: {
-            id: true,
-            modelCode: true,
-            coverImageUrl: true
-          }
-        },
-        category: {
-          select: {
-            name: true
-          }
-        }
-      },
-      orderBy: { purchaseDate: "desc" },
-      take: PURCHASE_PAGE_SIZE
-    }),
-    prisma.category.findMany({
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
-    }),
-    prisma.wishlistItem.findMany({
-      include: {
-        brand: true,
-        category: true
-      },
-      orderBy: [{ priority: "asc" }, { createdAt: "desc" }]
-    }),
+    getCachedDefaultPurchaseRecords(),
+    getCachedCategories(),
+    getCachedWishlistRecords(),
     getCachedProjectCatalogEntries()
   ]);
 
@@ -79,50 +42,21 @@ export async function getPurchasePageData() {
     }));
 
   return {
-    fallbackPurchases: purchases.map((item) => ({
-      id: item.id,
-      brandId: item.brandId,
-      categoryId: item.categoryId,
-      itemNameSnapshot: item.itemNameSnapshot,
-      gearItem: item.gearItem,
-      brand: item.brand,
-      category: item.category,
-      unitPriceCny: toNumber(item.unitPriceCny),
-      quantity: item.quantity,
-      totalPriceCny: toNumber(item.totalPriceCny),
-      itemStatus: item.itemStatus,
-      purchaseDate: item.purchaseDate.toISOString(),
-      channel: item.channel,
-      notes: item.notes
-    })),
+    fallbackPurchases: purchases.map(serializePurchaseRow),
     fallbackCategories: categories,
     fallbackCatalogItems,
-    fallbackWishlist: wishlistItems.map((item) => ({
-      ...item,
-      targetPriceCny: item.targetPriceCny == null ? null : toNumber(item.targetPriceCny),
-      currentSeenPriceCny: item.currentSeenPriceCny == null ? null : toNumber(item.currentSeenPriceCny)
-    }))
+    fallbackWishlist: wishlistItems.map(serializeWishlistItem)
   };
 }
 
 export async function getWishlistPageData() {
   const [fallbackWishlist, fallbackCategories] = await Promise.all([
-    prisma.wishlistItem.findMany({
-      include: {
-        brand: true,
-        category: true
-      },
-      orderBy: [{ priority: "asc" }, { createdAt: "desc" }]
-    }),
+    getCachedWishlistRecords(),
     getCachedCategories()
   ]);
 
   return {
-    fallbackWishlist: fallbackWishlist.map((item) => ({
-      ...item,
-      targetPriceCny: item.targetPriceCny == null ? null : toNumber(item.targetPriceCny),
-      currentSeenPriceCny: item.currentSeenPriceCny == null ? null : toNumber(item.currentSeenPriceCny)
-    })),
+    fallbackWishlist: fallbackWishlist.map(serializeWishlistItem),
     fallbackCategories
   };
 }

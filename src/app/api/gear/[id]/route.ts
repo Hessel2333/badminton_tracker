@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
 import { findOrCreateBrandId } from "@/lib/server/brands";
 import { findLocalImageUrl } from "@/lib/server/local-image-library";
+import { revalidateGearDerivedData } from "@/lib/server/revalidate-app-data";
 import { gearUpdateSchema } from "@/lib/validators/gear";
 
 type Context = {
@@ -200,6 +201,8 @@ export async function PUT(request: NextRequest, context: Context) {
       }
     });
   });
+
+  await revalidateGearDerivedData();
 
   return NextResponse.json(updated);
 }
