@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { currency } from "@/lib/utils";
 import { chartBase, CHART_COLORS, CHART_PRIMARY, CHART_SECONDARY, CHART_TERTIARY } from "@/lib/chart-theme";
 import type { AnalyticsData } from "@/lib/server/analytics-data";
+import { useSessionStorageState } from "@/hooks/useSessionStorageState";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -17,6 +18,10 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 function useIsDark() {
   if (typeof window === "undefined") return true;
   return document.documentElement.getAttribute("data-theme") !== "light";
+}
+
+function isAnalyticsRange(value: unknown): value is string {
+  return typeof value === "string" && (value === "all" || /^\d{4}$/.test(value));
 }
 
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -28,15 +33,38 @@ export function AnalyticsBoard({
   fallbackData?: AnalyticsData;
 } = {}) {
   const defaultRange = fallbackData?.range ?? (fallbackData?.availableYears?.[0] ? String(fallbackData.availableYears[0]) : "all");
-  const [range, setRange] = useState(defaultRange);
+  const [storedRange, setStoredRange] = useSessionStorageState<string>(
+    "analytics-range",
+    defaultRange,
+    isAnalyticsRange
+  );
   const isDark = useIsDark();
+  const availableYears = fallbackData?.availableYears ?? [];
+  const yearOptions = useMemo(
+    () => [...availableYears].sort((a, b) => b - a),
+    [availableYears]
+  );
+
+  const rangeOptions = useMemo(() => [
+    { id: "all", label: "全部历史" },
+    ...yearOptions.map(year => ({ id: String(year), label: `${year}年` }))
+  ], [yearOptions]);
+  const range = rangeOptions.some((option) => option.id === storedRange) ? storedRange : defaultRange;
+
+  useEffect(() => {
+    if (range !== storedRange) {
+      setStoredRange(defaultRange);
+    }
+  }, [defaultRange, range, setStoredRange, storedRange]);
 
   const { data: fullData, isLoading: loading, error: fetchError } =
     useSWR<AnalyticsData>(`/api/analytics/full?range=${range}`, fetcher, {
       fallbackData: range === defaultRange ? fallbackData : undefined,
       revalidateOnMount: !(range === defaultRange && fallbackData),
-      revalidateIfStale: range !== defaultRange,
-      keepPreviousData: true,
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60_000
     });
   const error = fetchError ? "加载分析数据失败" : null;
 
@@ -73,17 +101,6 @@ export function AnalyticsBoard({
       })),
     [fullData]
   );
-
-  const availableYears = fullData?.availableYears ?? fallbackData?.availableYears ?? [];
-  const yearOptions = useMemo(
-    () => [...availableYears].sort((a, b) => b - a),
-    [availableYears]
-  );
-
-  const rangeOptions = useMemo(() => [
-    { id: "all", label: "全部历史" },
-    ...yearOptions.map(year => ({ id: String(year), label: `${year}年` }))
-  ], [yearOptions]);
 
   const totalSpending = useMemo(
     () => trend.reduce((sum, item) => sum + Number(item.amount), 0),
@@ -304,7 +321,7 @@ export function AnalyticsBoard({
         <SegmentedControl
           options={rangeOptions}
           value={range}
-          onChange={setRange}
+          onChange={setStoredRange}
         />
       </ControlPanel>
 
