@@ -17,56 +17,17 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { mutate } from "swr";
 
 import { cn } from "@/lib/utils";
 
-function analyticsPrefetchKeys() {
-  const currentYear = new Date().getFullYear();
-  return [
-    `/api/analytics/full?range=${currentYear}`,
-    `/api/analytics/full?range=${currentYear - 1}`,
-    "/api/analytics/full?range=all"
-  ];
-}
-
 const nav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard },
-  {
-    href: "/purchases",
-    label: "项目装备库",
-    icon: Receipt,
-    dataKeys: ["/api/purchases?pageSize=80", "/api/settings/categories", "/api/catalog?scope=project&limit=240", "/api/wishlist"]
-  },
-  {
-    href: "/purchases/ledger",
-    label: "购买台账",
-    icon: BookText,
-    dataKeys: ["/api/purchases?pageSize=80", "/api/settings/categories", "/api/wishlist"]
-  },
+  { href: "/purchases", label: "项目装备库", icon: Receipt },
+  { href: "/purchases/ledger", label: "购买台账", icon: BookText },
   { href: "/gear-wall", label: "档案陈列", icon: ShieldCheck, matchPaths: ["/gear-wall", "/gear-board"] },
-  { href: "/analytics", label: "分析看板", icon: BarChart3, dataKeys: analyticsPrefetchKeys() },
-  {
-    href: "/settings",
-    label: "设置",
-    icon: Settings,
-    dataKeys: [
-      "/api/settings/categories",
-      "/api/settings/brands",
-      "/api/settings/rating-dimensions",
-      "/api/settings/project-catalog"
-    ]
-  }
+  { href: "/analytics", label: "分析看板", icon: BarChart3 },
+  { href: "/settings", label: "设置", icon: Settings }
 ];
-
-function fetchJson(url: string) {
-  return fetch(url).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Request failed for ${url}: ${response.status}`);
-    }
-    return response.json();
-  });
-}
 
 function currentLoginUrl() {
   if (typeof window === "undefined") return "/login";
@@ -81,7 +42,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
   });
   const prefetchedRoutes = useRef<Set<string>>(new Set());
-  const prefetchedDataKeys = useRef<Set<string>>(new Set());
   const activeHref = useMemo(() => {
     let best = "";
     for (const item of nav) {
@@ -106,20 +66,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!prefetchedRoutes.current.has(href)) {
       prefetchedRoutes.current.add(href);
       router.prefetch(href);
-    }
-
-    const item = nav.find((entry) => entry.href === href);
-    if (!item?.dataKeys?.length) return;
-
-    for (const key of item.dataKeys) {
-      if (prefetchedDataKeys.current.has(key)) continue;
-      prefetchedDataKeys.current.add(key);
-      void mutate(key, fetchJson(key), {
-        populateCache: true,
-        revalidate: false
-      }).catch(() => {
-        prefetchedDataKeys.current.delete(key);
-      });
     }
   }
 
