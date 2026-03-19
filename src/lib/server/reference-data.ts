@@ -5,6 +5,8 @@ import { buildProjectCatalogEntries } from "@/lib/project-catalog";
 
 export const CATEGORIES_TAG = "categories";
 export const PROJECT_CATALOG_TAG = "project-catalog";
+export const BRANDS_TAG = "brands";
+export const RATING_DIMENSIONS_TAG = "rating-dimensions";
 
 export const compareProjectCatalogItems = (
   a: { categoryName: string; brandName: string; suggestedUnitPriceCny?: number; modelCode?: string; name: string },
@@ -49,5 +51,29 @@ export const getCachedProjectCatalogEntries = unstable_cache(
   ["project-catalog-entries"],
   {
     tags: [PROJECT_CATALOG_TAG]
+  }
+);
+
+export const getCachedBrands = unstable_cache(
+  async () =>
+    prisma.brand.findMany({
+      orderBy: { name: "asc" }
+    }),
+  ["brands"],
+  {
+    tags: [BRANDS_TAG],
+    revalidate: 60
+  }
+);
+
+export const getCachedRatingDimensions = unstable_cache(
+  async () =>
+    prisma.ratingDimension.findMany({
+      orderBy: { sortOrder: "asc" }
+    }),
+  ["rating-dimensions"],
+  {
+    tags: [RATING_DIMENSIONS_TAG],
+    revalidate: 60
   }
 );

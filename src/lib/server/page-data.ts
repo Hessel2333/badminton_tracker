@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/server/number";
-import { getCachedCategories, getCachedProjectCatalogEntries } from "@/lib/server/reference-data";
+import {
+  getCachedBrands,
+  getCachedCategories,
+  getCachedProjectCatalogEntries,
+  getCachedRatingDimensions
+} from "@/lib/server/reference-data";
 
 const PURCHASE_PAGE_SIZE = 80;
 const PROJECT_LIBRARY_LIMIT = 240;
@@ -125,12 +130,8 @@ export async function getWishlistPageData() {
 export async function getSettingsPageData() {
   const [fallbackCategories, fallbackBrands, fallbackDimensions, fallbackProjectCatalog] = await Promise.all([
     getCachedCategories(),
-    prisma.brand.findMany({
-      orderBy: { name: "asc" }
-    }),
-    prisma.ratingDimension.findMany({
-      orderBy: { sortOrder: "asc" }
-    }),
+    getCachedBrands(),
+    getCachedRatingDimensions(),
     getCachedProjectCatalogEntries()
   ]);
 

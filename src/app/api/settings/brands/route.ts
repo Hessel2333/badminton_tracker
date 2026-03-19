@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import { getCachedBrands } from "@/lib/server/reference-data";
 
 export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
 
-  const items = await prisma.brand.findMany({
-    orderBy: { name: "asc" }
-  });
+  const items = await getCachedBrands();
   return NextResponse.json({ items });
 }

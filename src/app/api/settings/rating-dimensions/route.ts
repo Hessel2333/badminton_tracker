@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/server/auth-guard";
+import { getCachedRatingDimensions, RATING_DIMENSIONS_TAG } from "@/lib/server/reference-data";
 
 const updateSchema = z.object({
   items: z.array(
@@ -21,9 +23,7 @@ export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
 
-  const items = await prisma.ratingDimension.findMany({
-    orderBy: { sortOrder: "asc" }
-  });
+  const items = await getCachedRatingDimensions();
 
   return NextResponse.json({ items });
 }
@@ -59,6 +59,8 @@ export async function PUT(request: NextRequest) {
       })
     )
   );
+
+  revalidateTag(RATING_DIMENSIONS_TAG);
 
   return NextResponse.json({ items: result });
 }
