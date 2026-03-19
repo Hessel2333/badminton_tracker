@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type SetStateAction<T> = T | ((prevState: T) => T);
 
@@ -9,21 +9,20 @@ export function useSessionStorageState<T>(
   defaultValue: T,
   isValid?: (value: unknown) => value is T
 ) {
-  const [state, setState] = useState<T>(defaultValue);
-
-  useEffect(() => {
+  const [state, setState] = useState<T>(() => {
+    if (typeof window === "undefined") return defaultValue;
     try {
       const raw = window.sessionStorage.getItem(key);
-      if (!raw) return;
+      if (!raw) return defaultValue;
 
       const parsed = JSON.parse(raw) as unknown;
-      if (isValid && !isValid(parsed)) return;
+      if (isValid && !isValid(parsed)) return defaultValue;
 
-      setState(parsed as T);
+      return parsed as T;
     } catch {
-      // Ignore invalid persisted state and fall back to the default.
+      return defaultValue;
     }
-  }, [isValid, key]);
+  });
 
   function updateState(nextValue: SetStateAction<T>) {
     setState((prev) => {
