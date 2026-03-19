@@ -59,8 +59,6 @@ const nav = [
   }
 ];
 
-const WARM_NAV_DELAY_MS = 180;
-
 function fetchJson(url: string) {
   return fetch(url).then((response) => {
     if (!response.ok) {
@@ -68,24 +66,6 @@ function fetchJson(url: string) {
     }
     return response.json();
   });
-}
-
-function scheduleIdleWork(callback: () => void) {
-  if (typeof window === "undefined") return () => undefined;
-
-  const idleWindow = window as Window &
-    typeof globalThis & {
-      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-
-  if (typeof idleWindow.requestIdleCallback === "function" && typeof idleWindow.cancelIdleCallback === "function") {
-    const id = idleWindow.requestIdleCallback(() => callback(), { timeout: 1200 });
-    return () => idleWindow.cancelIdleCallback?.(id);
-  }
-
-  const id = window.setTimeout(callback, 120);
-  return () => window.clearTimeout(id);
 }
 
 function currentLoginUrl() {
@@ -143,24 +123,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }
 
-  useEffect(() => {
-    const pendingItems = nav.filter((item) => item.href !== activeHref);
-    const timers: number[] = [];
-    const cancelIdle = scheduleIdleWork(() => {
-      pendingItems.forEach((item, index) => {
-        const timer = window.setTimeout(() => {
-          prefetchNavItem(item.href);
-        }, index * WARM_NAV_DELAY_MS);
-        timers.push(timer);
-      });
-    });
-
-    return () => {
-      cancelIdle();
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [activeHref, router]);
-
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
@@ -216,6 +178,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={false}
                   onMouseEnter={() => prefetchNavItem(item.href)}
                   onFocus={() => prefetchNavItem(item.href)}
                   className={cn(
