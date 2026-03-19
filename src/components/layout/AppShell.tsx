@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { mutate } from "swr";
 
+import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -92,10 +94,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       for (const url of urls) {
         try {
-          await fetch(url, {
-            signal: controller.signal,
-            credentials: "same-origin"
-          });
+          await mutate(
+            url,
+            fetchJsonWithPerf(url),
+            {
+              populateCache: true,
+              revalidate: false
+            }
+          );
         } catch (error) {
           if ((error as Error).name !== "AbortError") {
             console.warn(`[perf] low-frequency prefetch failed: ${url}`, error);

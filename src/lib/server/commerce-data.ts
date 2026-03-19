@@ -52,6 +52,11 @@ type WishlistRecord = Prisma.WishlistItemGetPayload<{
   };
 }>;
 
+function toIsoDate(value: Date | string) {
+  if (value instanceof Date) return value.toISOString();
+  return new Date(value).toISOString();
+}
+
 export function serializePurchaseRow(item: PurchaseListRecord) {
   return {
     id: item.id,
@@ -65,7 +70,7 @@ export function serializePurchaseRow(item: PurchaseListRecord) {
     quantity: item.quantity,
     totalPriceCny: toNumber(item.totalPriceCny),
     itemStatus: item.itemStatus,
-    purchaseDate: item.purchaseDate.toISOString(),
+    purchaseDate: toIsoDate(item.purchaseDate),
     channel: item.channel,
     notes: item.notes
   };

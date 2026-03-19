@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -77,21 +76,12 @@ export function GearWallManager({
 }: {
   initialItems: GearWallItem[];
 }) {
-  const router = useRouter();
-  const prefetched = useRef<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useSessionStorageState<CategoryFilter>(
     "gear-wall-category-filter",
     "ALL",
     isCategoryFilter
   );
   const [sortBy, setSortBy] = useState<SortOption>("recent_purchase_desc");
-
-  function prefetchDetail(id: string) {
-    const href = `/gear/${id}`;
-    if (prefetched.current.has(href)) return;
-    prefetched.current.add(href);
-    router.prefetch(href);
-  }
 
   if (initialItems.length === 0) {
     return (
@@ -210,8 +200,7 @@ export function GearWallManager({
             <Link
               key={item.id}
               href={`/gear/${item.id}`}
-              onMouseEnter={() => prefetchDetail(item.id)}
-              onFocus={() => prefetchDetail(item.id)}
+              prefetch={false}
             >
               <Card
                 className="group h-full p-4 transition-all duration-300 hover:border-accent/35"
