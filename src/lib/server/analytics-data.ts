@@ -37,35 +37,7 @@ type SnapshotRow = {
   refreshed_at: Date;
 };
 
-let snapshotTableEnsured: Promise<boolean> | null = null;
-
-async function ensureAnalyticsSnapshotTable() {
-  if (!snapshotTableEnsured) {
-    snapshotTableEnsured = (async () => {
-      try {
-        await prisma.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS analytics_snapshots (
-            range_key TEXT PRIMARY KEY,
-            payload_json JSONB NOT NULL,
-            refreshed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          )
-        `);
-        return true;
-      } catch (error) {
-        console.warn("[perf] analytics snapshot table unavailable", error);
-        return false;
-      }
-    })();
-  }
-
-  return snapshotTableEnsured;
-}
-
 async function readAnalyticsSnapshot(range: string): Promise<AnalyticsData | null> {
-  if (!(await ensureAnalyticsSnapshotTable())) return null;
-
   try {
     const rows = await prisma.$queryRawUnsafe<SnapshotRow[]>(
       `
@@ -93,8 +65,6 @@ async function readAnalyticsSnapshot(range: string): Promise<AnalyticsData | nul
 }
 
 async function writeAnalyticsSnapshot(range: string, payload: AnalyticsData) {
-  if (!(await ensureAnalyticsSnapshotTable())) return;
-
   try {
     await prisma.$executeRawUnsafe(
       `
