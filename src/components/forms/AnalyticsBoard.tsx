@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -27,18 +27,17 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ControlPanel } from "@/components/ui/ControlPanel";
 
 export function AnalyticsBoard({
-  fallbackData,
+  availableYears
 }: {
-  fallbackData?: AnalyticsData;
-} = {}) {
-  const defaultRange = fallbackData?.range ?? (fallbackData?.availableYears?.[0] ? String(fallbackData.availableYears[0]) : "all");
+  availableYears: number[];
+}) {
+  const defaultRange = availableYears[0] ? String(availableYears[0]) : "all";
   const [storedRange, setStoredRange] = useSessionStorageState<string>(
     "analytics-range",
     defaultRange,
     isAnalyticsRange
   );
   const isDark = useIsDark();
-  const availableYears = fallbackData?.availableYears ?? [];
   const yearOptions = useMemo(
     () => [...availableYears].sort((a, b) => b - a),
     [availableYears]
@@ -56,16 +55,35 @@ export function AnalyticsBoard({
     }
   }, [defaultRange, range, setStoredRange, storedRange]);
 
+  // 用户频繁切换 range 时，只保留最后一次请求：取消之前的 in-flight fetch，
+  // 避免浏览器排队/下载阶段长时间卡住造成“偶发超慢”的体感。
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const swrKey = useMemo(() => `/api/analytics/full?range=${range}`, [range]);
+
   const { data: fullData, isLoading: loading, error: fetchError } =
-    useSWR<AnalyticsData>(`/api/analytics/full?range=${range}`, fetchJsonWithPerf, {
-      fallbackData: range === defaultRange ? fallbackData : undefined,
-      revalidateOnMount: !(range === defaultRange && fallbackData),
+    useSWR<AnalyticsData>(swrKey, (url) => {
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
+      return fetchJsonWithPerf<AnalyticsData>(url, { signal: abortRef.current.signal });
+    }, {
+      keepPreviousData: true,
+      revalidateOnMount: true,
       revalidateIfStale: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       dedupingInterval: 60_000
     });
-  const error = fetchError ? "加载分析数据失败" : null;
+  const error =
+    fetchError
+      ? // AbortError 是“用户切换导致取消”，不需要提示为错误
+        (fetchError instanceof Error && fetchError.name === "AbortError" ? null : "加载分析数据失败")
+      : null;
 
   const base = chartBase(isDark);
 

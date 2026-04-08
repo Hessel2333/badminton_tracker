@@ -22,7 +22,14 @@ export async function GET(request: NextRequest) {
   const payload = await metrics.track("data", () => getCachedAnalyticsFullData(range));
   metrics.log({ range });
 
+  // 该接口是“用户私有分析数据”，使用浏览器侧 private cache 抵抗网络抖动：
+  // - max-age: 1 分钟内同 range 命中本地缓存
+  // - stale-while-revalidate: 允许短时间内使用旧数据，后台刷新
+  const headers = metrics.headers({
+    "Cache-Control": "private, max-age=60, stale-while-revalidate=300"
+  });
+
   return NextResponse.json(payload, {
-    headers: metrics.headers()
+    headers
   });
 }
