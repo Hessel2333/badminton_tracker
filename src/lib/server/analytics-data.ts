@@ -30,14 +30,22 @@ export type AnalyticsData = {
 };
 
 export const ANALYTICS_FULL_TAG = "analytics-full";
-const SNAPSHOT_MAX_AGE_MS = 5 * 60_000;
+const SNAPSHOT_FRESH_MAX_AGE_MS = 5 * 60_000;
+const SNAPSHOT_STALE_MAX_AGE_MS = 60 * 60_000;
 
 type SnapshotRow = {
   payload_json: Prisma.JsonValue;
   refreshed_at: Date;
 };
 
-async function readAnalyticsSnapshot(range: string): Promise<AnalyticsData | null> {
+type SnapshotResult = {
+  payload: AnalyticsData;
+  refreshedAt: Date;
+  ageMs: number;
+  isFresh: boolean;
+};
+
+async function readAnalyticsSnapshot(range: string): Promise<SnapshotResult | null> {
   try {
     const rows = await prisma.$queryRawUnsafe<SnapshotRow[]>(
       `
@@ -53,11 +61,15 @@ async function readAnalyticsSnapshot(range: string): Promise<AnalyticsData | nul
     if (!row) return null;
 
     const refreshedAt = new Date(row.refreshed_at);
-    if (Date.now() - refreshedAt.getTime() > SNAPSHOT_MAX_AGE_MS) {
-      return null;
-    }
+    const ageMs = Date.now() - refreshedAt.getTime();
+    if (ageMs > SNAPSHOT_STALE_MAX_AGE_MS) return null;
 
-    return row.payload_json as AnalyticsData;
+    return {
+      payload: row.payload_json as AnalyticsData,
+      refreshedAt,
+      ageMs,
+      isFresh: ageMs <= SNAPSHOT_FRESH_MAX_AGE_MS
+    };
   } catch (error) {
     console.warn("[perf] analytics snapshot read failed", error);
     return null;
@@ -93,10 +105,40 @@ export const getCachedAnalyticsAvailableYears = unstable_cache(
   }
 );
 
-async function buildAnalyticsFullData(range: string): Promise<AnalyticsData> {
+const refreshInFlight = new Map<string, Promise<void>>();
+
+async function rebuildAndWriteSnapshot(range: string) {
+  const existing = refreshInFlight.get(range);
+  if (existing) return existing;
+
+  const task = (async () => {
+    try {
+      const payload = await buildAnalyticsFullData(range, { allowStaleSnapshot: false });
+      await writeAnalyticsSnapshot(range, payload);
+    } catch (error) {
+      console.warn("[perf] analytics snapshot refresh failed", error);
+    } finally {
+      refreshInFlight.delete(range);
+    }
+  })();
+
+  refreshInFlight.set(range, task);
+  return task;
+}
+
+async function buildAnalyticsFullData(
+  range: string,
+  options: { allowStaleSnapshot: boolean } = { allowStaleSnapshot: true }
+): Promise<AnalyticsData> {
   const snapshot = await readAnalyticsSnapshot(range);
   if (snapshot) {
-    return snapshot;
+    if (snapshot.isFresh) return snapshot.payload;
+
+    // 缓存过期但仍可用：先返回旧数据，后台刷新，避免偶发 10s+ 阻塞（range=all 特别明显）
+    if (options.allowStaleSnapshot) {
+      void rebuildAndWriteSnapshot(range);
+      return snapshot.payload;
+    }
   }
 
   const [availableYears, trend, brandShare, categoryShare, frequency, shuttleInsights, wishlistCounts, gearRanking] =
@@ -159,8 +201,6 @@ async function buildAnalyticsFullData(range: string): Promise<AnalyticsData> {
       overall: toNumber(item.overall)
     }))
   };
-
-  await writeAnalyticsSnapshot(range, payload);
 
   return payload;
 }
