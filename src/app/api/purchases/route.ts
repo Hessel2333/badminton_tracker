@@ -13,6 +13,7 @@ import { findOrCreateBrandId } from "@/lib/server/brands";
 import { resolveOrCreateGearItemIdFromPurchase } from "@/lib/server/gear-from-purchase";
 import { createRequestMetrics } from "@/lib/server/perf";
 import { createPurchaseEvent } from "@/lib/server/purchase-events";
+import { findLocalImageUrl } from "@/lib/server/local-image-library";
 import { revalidatePurchaseDerivedData } from "@/lib/server/revalidate-app-data";
 import { purchaseSchema } from "@/lib/validators/purchase";
 
@@ -34,6 +35,17 @@ export async function POST(request: NextRequest) {
       brandName: input.brandName ?? undefined,
       modelCode: input.modelCode ?? undefined
     });
+
+    // 事务内避免做本地文件系统扫描（会导致 interactive transaction 超时）
+    const localCoverImage =
+      input.allowAutoImageLookup === false || input.gearCoverImageUrl
+        ? null
+        : await findLocalImageUrl({
+            name: canonicalItemName,
+            brandName: input.brandName ?? null,
+            modelCode: input.modelCode ?? null
+          });
+
     const item = await prisma.$transaction(async (tx) => {
       const brandId = await findOrCreateBrandId(input.brandName ?? null, tx);
       const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
@@ -43,8 +55,9 @@ export async function POST(request: NextRequest) {
         modelCode: input.modelCode ?? null,
         categoryId: input.categoryId ?? null,
         gearItemId: input.gearItemId ?? null,
-        allowAutoImageLookup: input.allowAutoImageLookup,
-        coverImageUrl: input.gearCoverImageUrl ?? null
+        // 事务内不再触发自动图片查找；若需要则在事务外预先计算 localCoverImage
+        allowAutoImageLookup: false,
+        coverImageUrl: input.gearCoverImageUrl ?? localCoverImage ?? null
       });
       const totalPrice = calcTotalPrice(input.unitPriceCny, input.quantity, input.totalPriceCny ?? undefined);
 
@@ -81,7 +94,7 @@ export async function POST(request: NextRequest) {
       });
 
       return created;
-    });
+    }, { timeout: 15_000 });
 
     await revalidatePurchaseDerivedData();
 
