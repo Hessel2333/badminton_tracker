@@ -15,6 +15,8 @@
     "db:seed:local": "/bin/zsh -lc 'test -f .env.local || { echo \".env.local not found\"; exit 1; }; set -a; source .env.local; set +a; npx prisma db seed'",
     "data:sync-local-images": "tsx scripts/sync-local-gear-images.ts",
     "data:trim-cutout-images": "tsx scripts/trim-cutout-images.ts",
+    "data:trim-cutout-images:assets": "tsx scripts/trim-cutout-images.ts --assets",
+    "data:trim-cutout-images:public": "tsx scripts/trim-cutout-images.ts --public",
     "data:update-local-cover-images": "tsx scripts/update-local-cover-images.ts",
     "data:sync-local-to-supabase": "tsx scripts/sync-local-to-supabase.ts",
     "data:sync-supabase-to-local": "tsx scripts/sync-supabase-to-local.ts",
