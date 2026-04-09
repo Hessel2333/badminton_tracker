@@ -57,35 +57,82 @@ async function walkPngFiles(dir) {
   return files;
 }
 
+function clampInt(n, min, max) {
+  return Math.max(min, Math.min(max, n | 0));
+}
+
+function computeAlphaBBox(alpha, width, height, alphaThreshold) {
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  // alpha 是 0..255，threshold 也是 0..255
+  for (let y = 0; y < height; y += 1) {
+    const rowOffset = y * width;
+    for (let x = 0; x < width; x += 1) {
+      if (alpha[rowOffset + x] > alphaThreshold) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (maxX < minX || maxY < minY) return null;
+
+  return {
+    left: minX,
+    top: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1
+  };
+}
+
 async function trimPng(filePath, { padding, threshold }) {
-  const source = sharp(filePath, { failOn: "none" }).ensureAlpha();
-  const before = await source.metadata();
+  const img = sharp(filePath, { failOn: "none" }).ensureAlpha();
+  const before = await img.metadata();
   if (!before.width || !before.height) return null;
 
-  const { data, info } = await source
-    // threshold 调高可以吃掉半透明抗锯齿边，减少“看起来偏短”的透明边距
-    .trim({ threshold })
-    .png({ compressionLevel: 9 })
+  // 用 alpha 通道算 bbox，比 sharp.trim 稳定可控
+  const { data, info } = await img
+    .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const withPadding = await sharp(data)
-    .extend({
-      top: padding,
-      right: padding,
-      bottom: padding,
-      left: padding,
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    })
+  const width = info.width;
+  const height = info.height;
+
+  // RGBA raw：alpha 在第 4 个通道
+  const alpha = new Uint8Array(width * height);
+  for (let i = 0, j = 3; i < alpha.length; i += 1, j += 4) {
+    alpha[i] = data[j];
+  }
+
+  // threshold: 0..255，默认 10 表示 alpha<=10 视为透明
+  const alphaThreshold = clampInt(threshold, 0, 255);
+  const bbox = computeAlphaBBox(alpha, width, height, alphaThreshold);
+  if (!bbox) return null;
+
+  const withPad = {
+    left: clampInt(bbox.left - padding, 0, width - 1),
+    top: clampInt(bbox.top - padding, 0, height - 1),
+    width: clampInt(bbox.width + padding * 2, 1, width),
+    height: clampInt(bbox.height + padding * 2, 1, height)
+  };
+
+  const cropped = await sharp(filePath, { failOn: "none" })
+    .extract(withPad)
     .png({ compressionLevel: 9 })
     .toBuffer();
 
   const tempPath = `${filePath}.tmp`;
-  await fs.writeFile(tempPath, withPadding);
+  await fs.writeFile(tempPath, cropped);
   await fs.rename(tempPath, filePath);
 
   return {
     before: `${before.width}x${before.height}`,
-    after: `${info.width + padding * 2}x${info.height + padding * 2}`
+    after: `${withPad.width}x${withPad.height}`
   };
 }
 
