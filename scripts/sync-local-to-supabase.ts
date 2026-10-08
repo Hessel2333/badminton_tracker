@@ -103,6 +103,7 @@ async function main() {
     await target.brand.deleteMany();
     await target.category.deleteMany();
     await target.activitySession.deleteMany();
+    await target.$executeRawUnsafe(`DELETE FROM analytics_snapshots`);
     await target.user.deleteMany();
 
     if (users.length) await target.user.createMany({ data: users });

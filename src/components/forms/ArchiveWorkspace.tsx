@@ -32,7 +32,6 @@ const tabConfig: Record<
     href: string;
     label: string;
     title: string;
-    subtitle: string;
     icon: typeof Grid;
   }
 > = {
@@ -40,14 +39,12 @@ const tabConfig: Record<
     href: "/gear-wall",
     label: "资产盘点",
     title: "档案陈列",
-    subtitle: "先盘点你当前拥有什么、各自是什么状态，再决定是否切到展陈视图。",
     icon: Grid
   },
   display: {
     href: "/gear-board",
     label: "展陈视图",
     title: "档案陈列",
-    subtitle: "同一批装备切到展示模式，专注观察陈列关系、布局和导出画面。",
     icon: GalleryHorizontal
   }
 };
@@ -65,7 +62,7 @@ export function ArchiveWorkspace({
 
   return (
     <div className="space-y-6">
-      <SectionTitle icon={current.icon} title={current.title} subtitle={current.subtitle} />
+      <SectionTitle icon={current.icon} title={current.title} />
 
       <div className="flex flex-wrap gap-3">
         {(

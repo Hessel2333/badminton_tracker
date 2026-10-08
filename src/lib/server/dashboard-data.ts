@@ -7,14 +7,16 @@ import { prisma } from "@/lib/prisma";
 export const DASHBOARD_DATA_TAG = "dashboard-data";
 
 export const getCachedDashboardData = unstable_cache(
-  async () => {
+  async (userId: string) => {
     const [overview, groupedStatus, recentArchive] = await Promise.all([
-      getOverview(),
+      getOverview(userId),
       prisma.purchaseRecord.groupBy({
         by: ["itemStatus"],
+        where: { userId },
         _sum: { quantity: true }
       }),
       prisma.purchaseRecord.findMany({
+        where: { userId },
         take: 5,
         orderBy: { purchaseDate: "desc" },
         include: {
@@ -36,20 +38,17 @@ export const getCachedDashboardData = unstable_cache(
     const archiveState = [
       {
         key: "active",
-        quantity: quantityByStatus.get(ItemStatus.IN_USE) ?? 0,
-        description: "当前正在打和正在消耗的装备。"
+        quantity: quantityByStatus.get(ItemStatus.IN_USE) ?? 0
       },
       {
         key: "stored",
-        quantity: quantityByStatus.get(ItemStatus.STORED) ?? 0,
-        description: "已经入档，但暂时没有投入使用。"
+        quantity: quantityByStatus.get(ItemStatus.STORED) ?? 0
       },
       {
         key: "retired",
         quantity:
           (quantityByStatus.get(ItemStatus.USED_UP) ?? 0) +
-          (quantityByStatus.get(ItemStatus.WORN_OUT) ?? 0),
-        description: "完成生命周期、可以回看取舍记录。"
+          (quantityByStatus.get(ItemStatus.WORN_OUT) ?? 0)
       }
     ] as const;
 

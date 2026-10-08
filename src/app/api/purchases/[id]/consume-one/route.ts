@@ -13,13 +13,14 @@ type Context = {
 export async function POST(_request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const source = await tx.purchaseRecord.findUnique({
-        where: { id }
+      const source = await tx.purchaseRecord.findFirst({
+        where: { id, userId }
       });
 
       if (!source) {
@@ -44,6 +45,7 @@ export async function POST(_request: NextRequest, context: Context) {
         });
 
         await createPurchaseEvent(tx, {
+          userId,
           purchaseRecordId: updated.id,
           gearItemId: updated.gearItemId,
           eventType: "CONSUMED",
@@ -69,6 +71,7 @@ export async function POST(_request: NextRequest, context: Context) {
 
       const consumed = await tx.purchaseRecord.create({
         data: {
+          userId,
           gearItemId: source.gearItemId,
           brandId: source.brandId,
           categoryId: source.categoryId,
@@ -87,6 +90,7 @@ export async function POST(_request: NextRequest, context: Context) {
       });
 
       await createPurchaseEvent(tx, {
+        userId,
         purchaseRecordId: consumed.id,
         gearItemId: consumed.gearItemId,
         eventType: "CONSUMED",

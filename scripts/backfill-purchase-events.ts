@@ -18,6 +18,7 @@ async function main() {
   for (const purchase of purchases) {
     const existingTypes = new Set(purchase.events.map((event) => event.eventType));
     const eventsToCreate: Array<{
+      userId: string;
       purchaseRecordId: string;
       gearItemId: string | null;
       eventType: PurchaseEventType;
@@ -30,6 +31,7 @@ async function main() {
 
     if (!existingTypes.has(PurchaseEventType.PURCHASED)) {
       eventsToCreate.push({
+        userId: purchase.userId,
         purchaseRecordId: purchase.id,
         gearItemId: purchase.gearItemId,
         eventType: PurchaseEventType.PURCHASED,
@@ -43,6 +45,7 @@ async function main() {
 
     if (purchase.itemStatus === ItemStatus.USED_UP && !existingTypes.has(PurchaseEventType.CONSUMED)) {
       eventsToCreate.push({
+        userId: purchase.userId,
         purchaseRecordId: purchase.id,
         gearItemId: purchase.gearItemId,
         eventType: PurchaseEventType.CONSUMED,
@@ -56,6 +59,7 @@ async function main() {
 
     if (purchase.itemStatus === ItemStatus.WORN_OUT && !existingTypes.has(PurchaseEventType.DAMAGED)) {
       eventsToCreate.push({
+        userId: purchase.userId,
         purchaseRecordId: purchase.id,
         gearItemId: purchase.gearItemId,
         eventType: PurchaseEventType.DAMAGED,

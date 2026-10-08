@@ -78,7 +78,7 @@ npm run data:import-initial
 npm run data:sync-supabase-to-local
 ```
 
-访问 [http://localhost:3000](http://localhost:3000)。
+访问 [http://localhost:3009](http://localhost:3009)。
 
 ## Supabase 连接建议
 
@@ -149,3 +149,7 @@ GitHub Actions 工作流位于 `.github/workflows/supabase-keepalive.yml`，当�
 ## 第二阶段预留
 
 数据模型已预留 `activity_sessions` 与 `APPLE_HEALTH` source，用于后续 iOS 健身羽毛球数据导入与消费联动分析。
+
+## 装备名称与别名维护
+
+品牌与分品牌装备目录见 [catalog/README.md](catalog/README.md)。运行 `python3 scripts/validate-catalog.py` 可检查目录和别名冲突。该维护库目前尚未接入应用目录的自动生成流程。

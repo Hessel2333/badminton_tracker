@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "brandId": "lining",
+  "equipment": [
+    {
+      "id": "2bbec2ad-7263-56da-9777-81150292bca4",
+      "name": "李宁 战戟 8000",
+      "model": "AYPT369-4",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1499,
+      "imageKey": "lining_racket_zhanji8000_main_01",
+      "popularity": 88,
+      "tags": [
+        "均衡"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lining",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "3c5a60c0-6dc2-5895-b4f4-fc6f515bc613",
+      "name": "李宁 雷霆 80 (黑)",
+      "model": "AYPT271-4",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1399,
+      "imageKey": "lining_racket_leiting80black_main_01",
+      "popularity": 92,
+      "tags": [
+        "进攻"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lining",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "960ea51b-4c24-5f8b-bdf7-d18564016a67",
+      "name": "李宁 雷霆 80 (白)",
+      "model": "AYPV035-4",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1399,
+      "imageKey": "lining_racket_leiting80white_main_01",
+      "popularity": 91,
+      "tags": [
+        "进攻"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lining",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "45a3e57f-91c0-5d77-a15e-7182c97b1e71",
+      "name": "贴地飞行 2 MAX",
+      "model": "贴地飞行2 MAX",
+      "series": null,
+      "category": "球鞋",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 699,
+      "imageKey": "lining_shoes_tiedifeixing2max_cutout_01",
+      "popularity": 92,
+      "tags": [
+        "包裹",
+        "启动"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lining",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

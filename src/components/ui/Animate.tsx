@@ -1,7 +1,21 @@
 "use client";
 
-import { motion, HTMLMotionProps } from "framer-motion";
+import type { HTMLAttributes } from "react";
 
-export function Animate({ children, ...props }: HTMLMotionProps<"div">) {
-    return <motion.div {...props}>{children}</motion.div>;
+type AnimateProps = HTMLAttributes<HTMLDivElement> & {
+    initial?: unknown;
+    animate?: unknown;
+    exit?: unknown;
+    transition?: unknown;
+};
+
+export function Animate({
+    children,
+    initial: _initial,
+    animate: _animate,
+    exit: _exit,
+    transition: _transition,
+    ...props
+}: AnimateProps) {
+    return <div {...props}>{children}</div>;
 }

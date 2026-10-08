@@ -4,6 +4,7 @@ import { canonicalProductName } from "@/lib/business-rules";
 import { findLocalImageUrl } from "@/lib/server/local-image-library";
 
 type PurchaseGearInput = {
+  userId: string;
   itemNameSnapshot: string;
   brandName?: string | null;
   brandId?: string | null;
@@ -60,8 +61,8 @@ export async function resolveOrCreateGearItemIdFromPurchase(
   const modelCode = canonicalModelCode(input.modelCode);
 
   if (input.gearItemId) {
-      const existing = await db.gearItem.findUnique({
-      where: { id: input.gearItemId },
+    const existing = await db.gearItem.findFirst({
+      where: { id: input.gearItemId, userId: input.userId },
       select: { id: true }
     });
     if (existing) {
@@ -73,6 +74,7 @@ export async function resolveOrCreateGearItemIdFromPurchase(
   if (modelCode) {
     const byNameAndModel = await db.gearItem.findFirst({
       where: {
+        userId: input.userId,
         name: { equals: name, mode: "insensitive" },
         modelCode: { equals: modelCode, mode: "insensitive" },
         brandId: input.brandId ?? null,
@@ -88,6 +90,7 @@ export async function resolveOrCreateGearItemIdFromPurchase(
 
   const byBrandAndCategory = await db.gearItem.findFirst({
     where: {
+      userId: input.userId,
       name: {
         equals: name,
         mode: "insensitive"
@@ -113,6 +116,7 @@ export async function resolveOrCreateGearItemIdFromPurchase(
   const byBrand = input.brandId
     ? await db.gearItem.findFirst({
       where: {
+        userId: input.userId,
         name: {
           equals: name,
           mode: "insensitive"
@@ -137,6 +141,7 @@ export async function resolveOrCreateGearItemIdFromPurchase(
 
   const byName = await db.gearItem.findFirst({
     where: {
+      userId: input.userId,
       name: {
         equals: name,
         mode: "insensitive"
@@ -165,6 +170,7 @@ export async function resolveOrCreateGearItemIdFromPurchase(
     });
   const created = await db.gearItem.create({
     data: {
+      userId: input.userId,
       name,
       brandId: input.brandId ?? null,
       categoryId: input.categoryId ?? null,

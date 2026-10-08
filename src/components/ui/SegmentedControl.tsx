@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useId } from "react";
-import { motion } from "framer-motion";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface Option {
@@ -27,8 +26,6 @@ export function SegmentedControl({
     size = "md",
     fullWidth = false,
 }: SegmentedControlProps) {
-    const segmentedLayoutId = useId();
-
     return (
         <div
             className={cn(
@@ -56,14 +53,8 @@ export function SegmentedControl({
                         <span className="relative z-10">{option.label}</span>
 
                         {isActive && (
-                            <motion.div
-                                layoutId={`segmented-active-${segmentedLayoutId}`}
+                            <div
                                 className="absolute inset-0 z-0 rounded-full border border-[var(--border)] bg-[color:var(--panel-3)] shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 400,
-                                    damping: 30,
-                                }}
                             />
                         )}
                     </button>

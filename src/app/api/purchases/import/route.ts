@@ -55,6 +55,7 @@ function parseCSV(csv: string) {
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { csv } = (await request.json()) as { csv?: string };
   if (!csv) {
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
       const total = calcTotalPrice(item.unitPriceCny, item.quantity, item.totalPriceCny);
 
       const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
+        userId,
         itemNameSnapshot: canonicalItemName,
         brandName: item.brandName || null,
         brandId,
@@ -100,6 +102,7 @@ export async function POST(request: NextRequest) {
 
       const row = await tx.purchaseRecord.create({
         data: {
+          userId,
           gearItemId,
           itemNameSnapshot: canonicalItemName,
           brandId,
@@ -117,6 +120,7 @@ export async function POST(request: NextRequest) {
         }
       });
       await createPurchaseEvent(tx, {
+        userId,
         purchaseRecordId: row.id,
         gearItemId: row.gearItemId,
         eventType: "PURCHASED",

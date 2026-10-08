@@ -8,3 +8,18 @@ coverage
 *.log
 .vercel
 prisma/dev.db
+
+# Local backups and generated verification output
+/backups/
+/output/
+/test-results/
+*.btbackup
+*.dump
+*.tsbuildinfo
+
+# Xcode per-user state and build products
+**/xcuserdata/
+**/DerivedData/
+*.xcuserstate
+*.xcarchive
+*.ipa

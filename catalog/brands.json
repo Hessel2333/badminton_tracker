@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "brands": [
+    {
+      "id": "yonex",
+      "name": "YONEX",
+      "aliases": [
+        "尤尼克斯",
+        "YY"
+      ]
+    },
+    {
+      "id": "victor",
+      "name": "VICTOR",
+      "aliases": [
+        "胜利",
+        "威克多"
+      ]
+    },
+    {
+      "id": "lining",
+      "name": "李宁",
+      "aliases": [
+        "LI-NING",
+        "LINING"
+      ]
+    },
+    {
+      "id": "rsl",
+      "name": "RSL",
+      "aliases": [
+        "亚狮龙",
+        "亞獅龍"
+      ]
+    },
+    {
+      "id": "weiken",
+      "name": "威肯",
+      "aliases": [
+        "WEIKEN"
+      ]
+    },
+    {
+      "id": "chao",
+      "name": "超牌",
+      "aliases": [
+        "CHAO",
+        "CHAOPAI"
+      ]
+    },
+    {
+      "id": "lingmei",
+      "name": "翎美",
+      "aliases": [
+        "LINGMEI"
+      ]
+    },
+    {
+      "id": "bonny",
+      "name": "Bonny",
+      "aliases": [
+        "波力"
+      ]
+    },
+    {
+      "id": "mizuno",
+      "name": "Mizuno",
+      "aliases": [
+        "美津浓",
+        "美津濃"
+      ]
+    },
+    {
+      "id": "kawasaki",
+      "name": "Kawasaki",
+      "aliases": [
+        "川崎"
+      ]
+    }
+  ]
+}

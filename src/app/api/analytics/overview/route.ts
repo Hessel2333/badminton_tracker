@@ -7,6 +7,6 @@ export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
 
-  const data = await getOverview();
+  const data = await getOverview(auth.session.user.id);
   return NextResponse.json(data);
 }

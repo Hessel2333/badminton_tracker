@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "brandId": "kawasaki",
+  "equipment": [
+    {
+      "id": "3181c844-b40e-514a-ac85-af34f7c2a0b3",
+      "name": "Kawasaki K-166",
+      "model": "K-166",
+      "series": null,
+      "category": "球鞋",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 369,
+      "imageKey": null,
+      "popularity": 62,
+      "tags": [
+        "入门"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "kawasaki",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

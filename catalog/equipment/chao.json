@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "brandId": "chao",
+  "equipment": [
+    {
+      "id": "ef44ee6b-53e3-5d44-8c72-55b20b1edc05",
+      "name": "黄超羽毛球",
+      "model": "黄超",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 95,
+      "imageKey": "chao_shuttlecock_huangchao_cutout_01",
+      "popularity": 86,
+      "tags": [
+        "训练"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "chao",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "bb2cd6d2-aa96-5522-92e2-fdbf5c34f2b6",
+      "name": "红超羽毛球",
+      "model": "红超",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 99,
+      "imageKey": "chao_shuttlecock_hongchao_cutout_01",
+      "popularity": 74,
+      "tags": [
+        "训练"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "chao",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "4ef1a071-f3ce-5ce5-a2a8-3428b5ad2672",
+      "name": "蓝超羽毛球",
+      "model": "蓝超",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 102,
+      "imageKey": "chao_shuttlecock_lanchao_cutout_01",
+      "popularity": 72,
+      "tags": [
+        "训练"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "chao",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "52250d0e-6bde-561c-a1d0-f06cb2978a4d",
+      "name": "绿超羽毛球",
+      "model": "绿超",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 103,
+      "imageKey": "chao_shuttlecock_lvchao_cutout_01",
+      "popularity": 69,
+      "tags": [
+        "训练"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "chao",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

@@ -45,15 +45,17 @@ type SnapshotResult = {
   isFresh: boolean;
 };
 
-async function readAnalyticsSnapshot(range: string): Promise<SnapshotResult | null> {
+async function readAnalyticsSnapshot(userId: string, range: string): Promise<SnapshotResult | null> {
   try {
     const rows = await prisma.$queryRawUnsafe<SnapshotRow[]>(
       `
         SELECT payload_json, refreshed_at
         FROM analytics_snapshots
-        WHERE range_key = $1
+        WHERE user_id = $1
+          AND range_key = $2
         LIMIT 1
       `,
+      userId,
       range
     );
 
@@ -76,18 +78,19 @@ async function readAnalyticsSnapshot(range: string): Promise<SnapshotResult | nu
   }
 }
 
-async function writeAnalyticsSnapshot(range: string, payload: AnalyticsData) {
+async function writeAnalyticsSnapshot(userId: string, range: string, payload: AnalyticsData) {
   try {
     await prisma.$executeRawUnsafe(
       `
-        INSERT INTO analytics_snapshots (range_key, payload_json, refreshed_at, created_at, updated_at)
-        VALUES ($1, $2::jsonb, NOW(), NOW(), NOW())
-        ON CONFLICT (range_key)
+        INSERT INTO analytics_snapshots (user_id, range_key, payload_json, refreshed_at, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, NOW(), NOW(), NOW())
+        ON CONFLICT (user_id, range_key)
         DO UPDATE SET
           payload_json = EXCLUDED.payload_json,
           refreshed_at = NOW(),
           updated_at = NOW()
       `,
+      userId,
       range,
       JSON.stringify(payload)
     );
@@ -97,7 +100,7 @@ async function writeAnalyticsSnapshot(range: string, payload: AnalyticsData) {
 }
 
 export const getCachedAnalyticsAvailableYears = unstable_cache(
-  async () => getAnalyticsAvailableYears(),
+  async (userId: string) => getAnalyticsAvailableYears(userId),
   ["analytics-available-years"],
   {
     tags: [ANALYTICS_FULL_TAG],
@@ -107,49 +110,51 @@ export const getCachedAnalyticsAvailableYears = unstable_cache(
 
 const refreshInFlight = new Map<string, Promise<void>>();
 
-async function rebuildAndWriteSnapshot(range: string) {
-  const existing = refreshInFlight.get(range);
+async function rebuildAndWriteSnapshot(userId: string, range: string) {
+  const key = `${userId}:${range}`;
+  const existing = refreshInFlight.get(key);
   if (existing) return existing;
 
   const task = (async () => {
     try {
-      const payload = await buildAnalyticsFullData(range, { allowStaleSnapshot: false });
-      await writeAnalyticsSnapshot(range, payload);
+      const payload = await buildAnalyticsFullData(userId, range, { allowStaleSnapshot: false });
+      await writeAnalyticsSnapshot(userId, range, payload);
     } catch (error) {
       console.warn("[perf] analytics snapshot refresh failed", error);
     } finally {
-      refreshInFlight.delete(range);
+      refreshInFlight.delete(key);
     }
   })();
 
-  refreshInFlight.set(range, task);
+  refreshInFlight.set(key, task);
   return task;
 }
 
 async function buildAnalyticsFullData(
+  userId: string,
   range: string,
   options: { allowStaleSnapshot: boolean } = { allowStaleSnapshot: true }
 ): Promise<AnalyticsData> {
-  const snapshot = await readAnalyticsSnapshot(range);
+  const snapshot = await readAnalyticsSnapshot(userId, range);
   if (snapshot) {
     if (snapshot.isFresh) return snapshot.payload;
 
     // 缓存过期但仍可用：先返回旧数据，后台刷新，避免偶发 10s+ 阻塞（range=all 特别明显）
     if (options.allowStaleSnapshot) {
-      void rebuildAndWriteSnapshot(range);
+      void rebuildAndWriteSnapshot(userId, range);
       return snapshot.payload;
     }
   }
 
   const [availableYears, trend, brandShare, categoryShare, frequency, shuttleInsights, wishlistCounts, gearRanking] =
     await Promise.all([
-      getCachedAnalyticsAvailableYears(),
-      getSpendingTrend(range),
-      getBrandShare(range),
-      getCategoryShare(range),
-      getPurchaseFrequency("month", range),
-      getShuttleInsights(range),
-      prisma.wishlistItem.groupBy({ by: ["status"], _count: { _all: true } }),
+      getCachedAnalyticsAvailableYears(userId),
+      getSpendingTrend(userId, range),
+      getBrandShare(userId, range),
+      getCategoryShare(userId, range),
+      getPurchaseFrequency(userId, "month", range),
+      getShuttleInsights(userId, range),
+      prisma.wishlistItem.groupBy({ by: ["status"], where: { userId }, _count: { _all: true } }),
       prisma.$queryRaw<Array<{ id: string; name: string; overall: number | string }>>`
         SELECT g.id, g.name, r.overall
         FROM gear_items g
@@ -158,6 +163,7 @@ async function buildAnalyticsFullData(
           WHERE gear_item_id = g.id
           ORDER BY rated_at DESC LIMIT 1
         ) r ON TRUE
+        WHERE g.user_id = ${userId}
         ORDER BY r.overall DESC LIMIT 8
       `
     ]);
@@ -205,7 +211,7 @@ async function buildAnalyticsFullData(
   return payload;
 }
 
-export const getCachedAnalyticsFullData = unstable_cache(async (range: string): Promise<AnalyticsData> => buildAnalyticsFullData(range), ["analytics-full-data"], {
+export const getCachedAnalyticsFullData = unstable_cache(async (userId: string, range: string): Promise<AnalyticsData> => buildAnalyticsFullData(userId, range), ["analytics-full-data"], {
   tags: [ANALYTICS_FULL_TAG],
   revalidate: 60
 });

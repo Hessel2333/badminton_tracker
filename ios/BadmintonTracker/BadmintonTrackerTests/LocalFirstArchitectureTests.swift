@@ -1,0 +1,541 @@
+import Foundation
+import SwiftData
+import XCTest
+@testable import BadmintonTracker
+
+@MainActor
+final class LocalFirstArchitectureTests: XCTestCase {
+  private var seedBundle: Bundle {
+    Bundle(for: LocalFirstArchitectureTests.self)
+  }
+
+  func testCatalogSeedImportsOnce() throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let context = ModelContext(container)
+    let service = CatalogSeedService(context: context, bundle: seedBundle)
+
+    XCTAssertTrue(try service.importBundledSeedIfNeeded())
+    let firstCount = try context.fetch(FetchDescriptor<CatalogEquipmentEntity>()).count
+    XCTAssertGreaterThan(firstCount, 0)
+
+    XCTAssertFalse(try service.importBundledSeedIfNeeded())
+    XCTAssertEqual(try context.fetch(FetchDescriptor<CatalogEquipmentEntity>()).count, firstCount)
+  }
+
+  func testBundledCatalogContains88DProAndItsImage() throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let context = ModelContext(container)
+    let seed = try CatalogSeedService(context: context, bundle: seedBundle).bundledSeed()
+    let equipment = try XCTUnwrap(seed.equipment.first(where: { $0.model == "AX88D PRO" }))
+
+    XCTAssertGreaterThanOrEqual(seed.version, 2)
+    XCTAssertEqual(equipment.id, UUID(uuidString: "30c91339-c606-5c33-884f-53a3e877a890"))
+    XCTAssertEqual(equipment.imageKey, "yonex_racket_astrox88dpro_main_01")
+    XCTAssertNotNil(Bundle.main.url(
+      forResource: "yonex_racket_astrox88dpro_main_01.png",
+      withExtension: nil,
+      subdirectory: "GearImages"
+    ))
+  }
+
+  func testLegacyStringingIDDecodesAsStableUUID() throws {
+    let data = Data(#"{"id":"legacy-string-id","stringName":"YONEX BG80"}"#.utf8)
+    let record = try JSONDecoder().decode(StringingRecord.self, from: data)
+    XCTAssertEqual(record.id, StableUUID.from("legacy-string-id"))
+  }
+
+  func testSeedUpdateAddsAndRetiresWithoutTouchingUserEquipment() throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let context = ModelContext(container)
+    let service = CatalogSeedService(context: context, bundle: seedBundle)
+    let original = try service.bundledSeed()
+    try service.apply(original)
+    let linkedCatalog = try XCTUnwrap(original.equipment.first)
+    let userID = UUID()
+    context.insert(UserEquipmentEntity(
+      id: userID,
+      catalogEquipmentID: linkedCatalog.id,
+      legacyIdentity: nil,
+      customName: linkedCatalog.name,
+      customBrand: linkedCatalog.brand,
+      customModel: linkedCatalog.model,
+      customVariant: nil,
+      category: linkedCatalog.category,
+      notes: "个人备注",
+      coverImageReference: nil,
+      imageKey: linkedCatalog.imageKey,
+      createdAt: Date(),
+      updatedAt: Date()
+    ))
+    try context.save()
+
+    var added = linkedCatalog
+    added = CatalogEquipment(
+      id: UUID(),
+      name: "新增测试装备",
+      brand: "TEST",
+      model: "V2",
+      series: nil,
+      category: .racket,
+      variant: nil,
+      weightClass: nil,
+      gripSize: nil,
+      color: nil,
+      releaseYear: nil,
+      suggestedUnitPriceCny: nil,
+      imageKey: nil,
+      popularity: 1,
+      tags: [],
+      revision: 2,
+      isActive: true,
+      createdAt: Date(),
+      updatedAt: Date()
+    )
+    let update = CatalogSeedFile(
+      version: original.version + 1,
+      equipment: Array(original.equipment.dropFirst()) + [added]
+    )
+    try service.apply(update)
+
+    let catalog = try context.fetch(FetchDescriptor<CatalogEquipmentEntity>())
+    XCTAssertEqual(catalog.first(where: { $0.id == linkedCatalog.id })?.isActive, false)
+    XCTAssertNotNil(catalog.first(where: { $0.id == added.id }))
+    let user = try context.fetch(FetchDescriptor<UserEquipmentEntity>()).first(where: { $0.id == userID })
+    XCTAssertEqual(user?.catalogEquipmentID, linkedCatalog.id)
+    XCTAssertEqual(user?.notes, "个人备注")
+  }
+
+  func testRepositorySupportsCatalogAndCustomUserEquipment() async throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let repository = makeIsolatedRepository(container: container)
+    let catalog = try await repository.fetchCatalogEquipment()
+    let firstCatalog = try XCTUnwrap(catalog.first)
+    let now = Date()
+    let linked = UserEquipment(
+      id: UUID(),
+      catalogEquipmentID: firstCatalog.id,
+      customName: firstCatalog.name,
+      customBrand: firstCatalog.brand,
+      customModel: firstCatalog.model,
+      customVariant: nil,
+      category: firstCatalog.category,
+      notes: "来自公共库",
+      profileDetails: nil,
+      createdAt: now,
+      updatedAt: now
+    )
+    let custom = UserEquipment(
+      id: UUID(),
+      catalogEquipmentID: nil,
+      customName: "我的自定义球拍",
+      customBrand: "自定义品牌",
+      customModel: "Prototype",
+      customVariant: "4UG5",
+      category: .racket,
+      notes: "不依赖公共库",
+      profileDetails: .racket(RacketGearDetails(
+        weightSpec: "4U",
+        gripSpec: "G5",
+        stringHistory: [StringingRecord(
+          id: StableUUID.from("legacy-string-id"),
+          stringName: "YONEX BG80",
+          mainTension: 28,
+          crossTension: 26,
+          stringingDate: "2026-08-14T00:00:00Z",
+          notes: nil
+        )]
+      )),
+      createdAt: now,
+      updatedAt: now
+    )
+
+    try await repository.createUserEquipment(linked)
+    try await repository.createUserEquipment(custom)
+    let users = try await repository.fetchUserEquipment()
+    XCTAssertEqual(users.count, 2)
+    XCTAssertEqual(users.first(where: { $0.id == linked.id })?.catalogEquipmentID, firstCatalog.id)
+    XCTAssertNil(users.first(where: { $0.id == custom.id })?.catalogEquipmentID)
+
+    let context = ModelContext(container)
+    let records = try context.fetch(FetchDescriptor<StringingRecordEntity>())
+    XCTAssertEqual(records.count, 1)
+    XCTAssertEqual(records.first?.id, StableUUID.from("legacy-string-id"))
+
+    var updatedCustom = custom
+    updatedCustom.notes = "更新后的个人备注"
+    updatedCustom.updatedAt = now.addingTimeInterval(60)
+    try await repository.updateUserEquipment(updatedCustom)
+    let updatedUsers = try await repository.fetchUserEquipment()
+    XCTAssertEqual(
+      updatedUsers.first(where: { $0.id == custom.id })?.notes,
+      "更新后的个人备注"
+    )
+
+    try await repository.deleteUserEquipment(id: linked.id)
+    let remainingUsers = try await repository.fetchUserEquipment()
+    XCTAssertEqual(remainingUsers.map(\.id), [custom.id])
+  }
+
+  func testCatalogPurchaseAndCustomPurchaseRemainIndependent() async throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let repository = makeIsolatedRepository(container: container)
+    let catalogItems = try await repository.fetchCatalogEquipment()
+    let catalog = try XCTUnwrap(catalogItems.first)
+    let date = "2026-08-14T00:00:00Z"
+
+    _ = try await repository.createPurchase(PurchaseInput(
+      catalogEquipmentID: catalog.id,
+      brandName: catalog.brand,
+      modelCode: catalog.model,
+      categoryId: catalog.category.rawValue,
+      categoryName: catalog.category.rawValue,
+      gearCoverImageUrl: nil,
+      gearImageKey: catalog.imageKey,
+      itemNameSnapshot: catalog.name,
+      unitPriceCny: 100,
+      quantity: 1,
+      totalPriceCny: 100,
+      purchaseDate: date,
+      channel: nil,
+      itemStatus: .inUse,
+      notes: "购买备注"
+    ))
+    let data = try await repository.createPurchase(PurchaseInput(
+      brandName: "自定义品牌",
+      modelCode: "CUSTOM-1",
+      categoryId: EquipmentCategory.racket.rawValue,
+      categoryName: EquipmentCategory.racket.rawValue,
+      gearCoverImageUrl: nil,
+      itemNameSnapshot: "公共库不存在的装备",
+      unitPriceCny: 200,
+      quantity: 1,
+      totalPriceCny: 200,
+      purchaseDate: date,
+      channel: nil,
+      itemStatus: .inUse,
+      notes: "自定义备注"
+    ))
+
+    XCTAssertEqual(data.gearWallItems.count, 2)
+    let users = try await repository.fetchUserEquipment()
+    XCTAssertEqual(users.count, 2)
+    XCTAssertNotNil(users.first(where: { $0.catalogEquipmentID == catalog.id }))
+    XCTAssertNotNil(users.first(where: { $0.catalogEquipmentID == nil }))
+  }
+
+  func testPartialConsumptionPersistsAndRestoresWithoutChangingSpend() async throws {
+    let container = try BadmintonDataContainer.inMemory()
+    let repository = makeIsolatedRepository(container: container)
+    let data = try await repository.createPurchase(PurchaseInput(
+      categoryName: "羽毛球", itemNameSnapshot: "消耗测试用球", unitPriceCny: 100,
+      quantity: 4, totalPriceCny: 380, purchaseDate: "2026-01-01T00:00:00Z",
+      itemStatus: .inUse
+    ))
+    let purchase = try XCTUnwrap(data.purchases.first)
+    let event = ConsumptionRecord(quantity: 2, finishedDate: "2026-01-20T00:00:00Z",
+      startedDate: "2026-01-10T00:00:00Z")
+    var edit = PurchaseEditInput(consumptionRecords: [event], unitPriceCny: 100, quantity: 4,
+      purchaseDate: purchase.purchaseDate, itemStatus: .inUse)
+    let partial = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+    XCTAssertEqual(partial.purchases.first?.quantity, 4)
+    XCTAssertEqual(partial.purchases.first?.remainingQuantity, 2)
+    XCTAssertEqual(partial.purchases.first?.totalPriceCny, purchase.totalPriceCny)
+    XCTAssertEqual(partial.gearWallItems.first?.activeQuantity, 2)
+    XCTAssertEqual(partial.gearWallItems.first?.usedUpQuantity, 2)
+    XCTAssertEqual(event.usageDays, 10)
+
+    let reloaded = try await makeIsolatedRepository(container: container).fetchAppData()
+    XCTAssertEqual(reloaded.purchases.first?.consumptionRecords, [event])
+    let backup = try repository.exportBackupData()
+    let restoredRepository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    let restored = try await restoredRepository.importBackupData(backup)
+    XCTAssertEqual(restored.purchases.first?.consumptionRecords, [event])
+    XCTAssertEqual(restored.gearWallItems.first?.activeQuantity, 2)
+
+    edit.consumptionRecords?.append(ConsumptionRecord(quantity: 2, finishedDate: "2026-02-01T00:00:00Z"))
+    let completed = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+    XCTAssertEqual(completed.gearWallItems.first?.activeQuantity, 0)
+    XCTAssertEqual(completed.gearWallItems.first?.usedUpQuantity, 4)
+    XCTAssertEqual(completed.purchases.first?.inventoryStatusText, "已用完")
+
+    edit.consumptionRecords = [event]
+    let undone = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+    XCTAssertEqual(undone.gearWallItems.first?.activeQuantity, 2)
+    XCTAssertEqual(undone.purchases.first?.totalPriceCny, purchase.totalPriceCny)
+
+    // Regression: undo the last event, save, then add a replacement event.
+    // Neither an empty history nor a later addition may restore the removed event.
+    edit.consumptionRecords = []
+    _ = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+    let afterUndo = try await makeIsolatedRepository(container: container).fetchAppData()
+    XCTAssertEqual(afterUndo.purchases.first?.consumptionHistory, [])
+    XCTAssertEqual(afterUndo.gearWallItems.first?.activeQuantity, 4)
+    let replacement = ConsumptionRecord(quantity: 2, finishedDate: "2026-02-02T00:00:00Z")
+    edit.consumptionRecords = [replacement]
+    _ = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+    let afterAdding = try await makeIsolatedRepository(container: container).fetchAppData()
+    XCTAssertEqual(afterAdding.purchases.first?.consumptionHistory, [replacement])
+    XCTAssertEqual(afterAdding.gearWallItems.first?.activeQuantity, 2)
+    XCTAssertEqual(afterAdding.purchases.first?.totalPriceCny, purchase.totalPriceCny)
+
+    edit.quantity = 1
+    do {
+      _ = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+      XCTFail("Must reject a purchase quantity below consumed quantity")
+    } catch is ConsumptionValidationError { }
+    let unchanged = try await repository.fetchAppData()
+    XCTAssertEqual(unchanged.purchases.first?.quantity, 4)
+
+    edit.quantity = 4
+    edit.consumptionRecords = [ConsumptionRecord(quantity: 1, finishedDate: "2025-12-01T00:00:00Z")]
+    do {
+      _ = try await repository.updatePurchaseRecord(id: purchase.id, input: edit)
+      XCTFail("Must reject consumption before purchase")
+    } catch is ConsumptionValidationError { }
+  }
+
+  func testLegacyConsumptionDecodingPreservesUnknownDates() throws {
+    let raw = Data(#"{"id":"old","itemNameSnapshot":"球","unitPriceCny":100,"quantity":4,"totalPriceCny":400,"itemStatus":"USED_UP","purchaseDate":"2026-01-01T00:00:00Z"}"#.utf8)
+    let purchase = try JSONDecoder().decode(PurchaseRecord.self, from: raw)
+    XCTAssertEqual(purchase.consumedQuantity, 4)
+    XCTAssertEqual(purchase.remainingQuantity, 0)
+    XCTAssertNil(purchase.consumptionHistory.first?.finishedDate)
+    XCTAssertNil(purchase.consumptionHistory.first?.usageDays)
+    let roundTrip = try JSONDecoder().decode(PurchaseRecord.self, from: JSONEncoder().encode(purchase))
+    XCTAssertEqual(roundTrip.consumptionHistory, purchase.consumptionHistory)
+    let edit = PurchaseEditInput(consumptionRecords: purchase.consumptionHistory,
+      unitPriceCny: 100, quantity: 4, purchaseDate: purchase.purchaseDate, itemStatus: .inUse)
+    XCTAssertNoThrow(try edit.validateConsumption(existing: purchase))
+  }
+
+  func testFailedSubmissionsReturnFailureAndKeepCurrentData() async throws {
+    let session = AppSession(repository: FailingSubmissionRepository())
+    session.purchases = PreviewData.purchases
+    let originalIDs = session.purchases.map(\.id)
+    let purchase = PurchaseInput(categoryName: "羽毛球", itemNameSnapshot: "测试", unitPriceCny: 100,
+      quantity: 1, purchaseDate: "2026-10-08T00:00:00Z", itemStatus: .inUse)
+    let created = await session.createPurchase(purchase)
+    XCTAssertFalse(created)
+    XCTAssertEqual(session.purchases.map(\.id), originalIDs)
+    XCTAssertFalse(session.isLoading)
+    XCTAssertNotNil(session.errorMessage)
+    let gearSaved = await session.updateGearItem(id: "missing", input: GearEditInput(
+      name: "测试", brandName: nil, modelCode: nil, categoryName: "羽毛球", gearCoverImageUrl: nil, profileDetails: nil))
+    XCTAssertFalse(gearSaved)
+    let wishlist = WishlistEditInput(name: "心愿", targetPriceCny: nil, currentSeenPriceCny: nil,
+      priority: 3, status: .want, sourceUrl: nil, imageUrl: nil, notes: nil, brandName: nil, categoryName: nil)
+    let wishCreated = await session.createWishlistItem(wishlist)
+    let wishSaved = await session.updateWishlistItem(id: "missing", input: wishlist)
+    XCTAssertFalse(wishCreated)
+    XCTAssertFalse(wishSaved)
+  }
+
+  func testBackupPreviewDoesNotMutateRecordsAndRejectsMissingPhotos() async throws {
+    let repository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    _ = try await repository.createPurchase(PurchaseInput(categoryName: "羽毛球", itemNameSnapshot: "原始记录",
+      unitPriceCny: 100, quantity: 2, purchaseDate: "2026-10-08T00:00:00Z", itemStatus: .inUse))
+    let backup = try repository.exportBackupPackageData()
+    let preview = try LocalDataStore.prepareBackup(data: backup)
+    XCTAssertEqual(preview.purchaseCount, 1)
+    XCTAssertEqual(preview.photoCount, 0)
+    let unchanged = try await repository.fetchAppData()
+    XCTAssertEqual(unchanged.purchases.count, 1)
+    var json = try XCTUnwrap(JSONSerialization.jsonObject(with: backup) as? [String: Any])
+    json["files"] = [["originalURLString": "file:///missing.png", "relativePath": "photos/missing.png"]]
+    XCTAssertThrowsError(try LocalDataStore.prepareBackup(data: JSONSerialization.data(withJSONObject: json)))
+    json["files"] = []
+    var snapshot = try XCTUnwrap(json["data"] as? [String: Any])
+    let purchases = try XCTUnwrap(snapshot["purchases"] as? [[String: Any]])
+    snapshot["purchases"] = purchases + purchases
+    json["data"] = snapshot
+    XCTAssertThrowsError(try LocalDataStore.prepareBackup(data: JSONSerialization.data(withJSONObject: json)))
+  }
+
+  func testBackupRestoreKeepsRecoveryPointAndRecoversFromImportFailure() async throws {
+    let repository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let recoveryURL = folder.appending(path: "recovery.btbackup")
+    let session = AppSession(repository: repository, recoveryURL: recoveryURL)
+    let saved = await session.createPurchase(PurchaseInput(categoryName: "羽毛球", itemNameSnapshot: "保留的记录",
+      unitPriceCny: 100, quantity: 2, purchaseDate: "2026-10-08T00:00:00Z", itemStatus: .inUse))
+    XCTAssertTrue(saved)
+    let invalid = PreparedBackup(data: Data("invalid".utf8), isLegacy: false, purchaseCount: 0,
+      wishlistCount: 0, photoCount: 0, exportedAt: nil)
+    let failed = await session.restorePreparedBackup(invalid)
+    XCTAssertFalse(failed)
+    XCTAssertEqual(session.purchases.first?.itemNameSnapshot, "保留的记录")
+    let recovery = try LocalDataStore.prepareBackup(data: Data(contentsOf: recoveryURL))
+    XCTAssertEqual(recovery.purchaseCount, 1)
+    let emptyRepository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    let emptyBackup = try LocalDataStore.prepareBackup(data: emptyRepository.exportBackupPackageData())
+    let restored = await session.restorePreparedBackup(emptyBackup)
+    XCTAssertTrue(restored)
+    XCTAssertTrue(session.purchases.isEmpty)
+    XCTAssertEqual(try LocalDataStore.prepareBackup(data: Data(contentsOf: recoveryURL)).purchaseCount, 1)
+  }
+
+  func testWishlistUndoRestoresIdentityAndPriceTimestamp() async throws {
+    let repository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    let session = AppSession(repository: repository)
+    let input = WishlistEditInput(name: "训练球", targetPriceCny: 90, currentSeenPriceCny: 100,
+      priority: 3, status: .want, sourceUrl: nil, imageUrl: nil, notes: "保留备注", brandName: "YONEX", categoryName: "羽毛球")
+    let saved = await session.createWishlistItem(input)
+    XCTAssertTrue(saved)
+    let original = try XCTUnwrap(session.wishlistItems.first)
+    XCTAssertNotNil(original.priceRecordedAt)
+    let edited = await session.updateWishlistItem(id: original.id, input: input)
+    XCTAssertTrue(edited)
+    XCTAssertEqual(session.wishlistItems.first?.priceRecordedAt, original.priceRecordedAt)
+    let deleted = await session.deleteWishlistItem(id: original.id)
+    XCTAssertTrue(deleted)
+    XCTAssertTrue(session.wishlistItems.isEmpty)
+    let restored = await session.undoLastOperation()
+    XCTAssertTrue(restored)
+    XCTAssertEqual(session.wishlistItems.first, original)
+    let again = await session.undoLastOperation()
+    XCTAssertFalse(again)
+    let persisted = try await repository.fetchAppData()
+    XCTAssertEqual(persisted.wishlistItems.first, original)
+  }
+
+  func testConsumptionUndoKeepsSubsequentEdits() async throws {
+    let repository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    let session = AppSession(repository: repository)
+    let saved = await session.createPurchase(PurchaseInput(categoryName: "羽毛球", itemNameSnapshot: "训练球",
+      unitPriceCny: 100, quantity: 5, purchaseDate: "2026-01-01T00:00:00Z", itemStatus: .stored))
+    XCTAssertTrue(saved)
+    let purchase = try XCTUnwrap(session.purchases.first)
+    let first = ConsumptionRecord(quantity: 1, finishedDate: "2026-02-01T00:00:00Z")
+    let later = ConsumptionRecord(quantity: 1, finishedDate: "2026-03-01T00:00:00Z")
+    let updated = await session.updatePurchaseRecord(id: purchase.id, input: PurchaseEditInput(
+      consumptionRecords: [first, later], unitPriceCny: 95, quantity: 5,
+      purchaseDate: purchase.purchaseDate, statusDate: nil, channel: "京东", itemStatus: .stored, notes: "后续修改"))
+    XCTAssertTrue(updated)
+    session.undoOperation = .consumption(purchaseID: purchase.id, recordID: first.id, originalStatus: .stored)
+    let undone = await session.undoLastOperation()
+    XCTAssertTrue(undone)
+    let result = try XCTUnwrap(session.purchases.first)
+    XCTAssertEqual(result.consumptionHistory, [later])
+    XCTAssertEqual(result.remainingQuantity, 4)
+    XCTAssertEqual(result.unitPriceCny, 95)
+    XCTAssertEqual(result.notes, "后续修改")
+    XCTAssertEqual(result.channel, "京东")
+  }
+
+  func testDraftsAreIsolatedAndMalformedDraftsAreIgnored() throws {
+    let suite = "draft-test-" + UUID().uuidString
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let values = (0..<22).map(String.init)
+    PurchaseDraftStore.save(values, key: "custom", defaults: defaults)
+    XCTAssertEqual(PurchaseDraftStore.load(key: "custom", defaults: defaults), values)
+    XCTAssertNil(PurchaseDraftStore.load(key: "catalog", defaults: defaults))
+    defaults.set(["broken"], forKey: "purchase.draft.v1.broken")
+    XCTAssertNil(PurchaseDraftStore.load(key: "broken", defaults: defaults))
+    PurchaseDraftStore.remove(key: "custom", defaults: defaults)
+    XCTAssertNil(PurchaseDraftStore.load(key: "custom", defaults: defaults))
+  }
+
+  func testMonthlyAnalyticsFillsGapsAndReconcilesDrilldown() async throws {
+    let repository = makeIsolatedRepository(container: try BadmintonDataContainer.inMemory())
+    _ = try await repository.createPurchase(PurchaseInput(categoryName: "羽毛球", itemNameSnapshot: "训练球",
+      unitPriceCny: 100, quantity: 2, purchaseDate: "2026-01-02T00:00:00Z", itemStatus: .inUse))
+    let data = try await repository.createPurchase(PurchaseInput(categoryName: "球拍", itemNameSnapshot: "球拍",
+      unitPriceCny: 500, quantity: 1, purchaseDate: "2026-03-02T00:00:00Z", itemStatus: .inUse))
+    let analytics = LocalDataStore.makeAnalytics(from: data.purchases, wishlistItems: [], range: "2026")
+    XCTAssertEqual(analytics.trend.count, 12)
+    XCTAssertEqual(analytics.trend.first { $0.bucket == "2026-02" }?.amount, 0)
+    XCTAssertEqual(analytics.frequency.first { $0.bucket == "2026-02" }?.count, 0)
+    for point in analytics.trend {
+      let records = AnalyticsPurchaseFilter(range: "2026", dimension: .period(point.bucket)).records(in: data.purchases)
+      XCTAssertEqual(point.amount, records.reduce(0) { $0 + $1.totalPriceCny })
+    }
+    XCTAssertEqual(analytics.trend.reduce(0) { $0 + $1.amount }, 700)
+  }
+
+  func testAnalyticsPerformanceForFiveThousandPurchases() {
+    let purchases = (0..<5000).map { index in
+      PurchaseRecord(id: String(index), itemNameSnapshot: "训练球", unitPriceCny: 100,
+        quantity: 2, totalPriceCny: 200, itemStatus: .inUse,
+        purchaseDate: "2026-05-10T00:00:00Z", channel: "京东", notes: nil,
+        brand: PreviewData.brandYonex, category: PreviewData.categoryShuttle, gearItem: nil)
+    }
+    measure {
+      let analytics = LocalDataStore.makeAnalytics(from: purchases, wishlistItems: [], range: "2026")
+      XCTAssertEqual(analytics.trend.reduce(0) { $0 + $1.amount }, 1_000_000)
+    }
+  }
+
+  private func makeIsolatedRepository(container: ModelContainer) -> LocalEquipmentRepository {
+    let unusedLegacyURL = FileManager.default.temporaryDirectory
+      .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+      .appending(path: "local-data.json")
+    return LocalEquipmentRepository(
+      container: container,
+      legacyFileURL: unusedLegacyURL,
+      bundle: seedBundle
+    )
+  }
+
+  func testMediaStorageUsesRelativePathsAndKeepsOriginalSeparate() throws {
+    let temporaryRoot = FileManager.default.temporaryDirectory
+      .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    let legacyRoot = FileManager.default.temporaryDirectory
+      .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    defer { try? FileManager.default.removeItem(at: temporaryRoot) }
+    defer { try? FileManager.default.removeItem(at: legacyRoot) }
+
+    let storage = LocalMediaStorage(rootURL: temporaryRoot, legacyPhotosURL: legacyRoot)
+    let id = UUID()
+    let folder = try storage.makeAssetDirectory(id: id)
+    let original = folder.appending(path: "original.jpg")
+    let processed = folder.appending(path: "processed.png")
+    let thumbnail = folder.appending(path: "thumbnail.jpg")
+    try Data("original".utf8).write(to: original)
+    try Data("processed".utf8).write(to: processed)
+    try Data("thumbnail".utf8).write(to: thumbnail)
+
+    let processedPath = try XCTUnwrap(storage.relativePath(for: processed))
+    XCTAssertFalse(processedPath.hasPrefix("/"))
+    let reference = storage.reference(forRelativePath: processedPath)
+    XCTAssertFalse(reference.contains(temporaryRoot.path))
+
+    let files = try XCTUnwrap(storage.files(forReference: reference))
+    XCTAssertNotEqual(files.originalRelativePath, files.processedRelativePath)
+    XCTAssertEqual(storage.resolveReference(reference), processed)
+
+    let reloadedStorage = LocalMediaStorage(rootURL: temporaryRoot, legacyPhotosURL: legacyRoot)
+    XCTAssertEqual(reloadedStorage.resolveReference(reference), processed)
+    try reloadedStorage.removeAsset(id: id)
+    XCTAssertFalse(FileManager.default.fileExists(atPath: folder.path))
+  }
+}
+
+@MainActor
+private struct FailingSubmissionRepository: EquipmentRepository {
+  enum Failure: Error { case expected }
+  func fetchCatalogEquipment() async throws -> [CatalogEquipment] { throw Failure.expected }
+  func searchCatalogEquipment(keyword: String) async throws -> [CatalogEquipment] { throw Failure.expected }
+  func fetchUserEquipment() async throws -> [UserEquipment] { throw Failure.expected }
+  func createUserEquipment(_ equipment: UserEquipment) async throws { throw Failure.expected }
+  func updateUserEquipment(_ equipment: UserEquipment) async throws { throw Failure.expected }
+  func deleteUserEquipment(id: UUID) async throws { throw Failure.expected }
+  func fetchMediaAssets(ownerID: UUID) async throws -> [MediaAsset] { throw Failure.expected }
+  func fetchAppData() async throws -> LocalAppData { throw Failure.expected }
+  func createPurchase(_ input: PurchaseInput) async throws -> LocalAppData { throw Failure.expected }
+  func purchaseWishlistItem(id: String, purchaseInput: PurchaseInput) async throws -> LocalAppData { throw Failure.expected }
+  func updateGearItem(id: String, input: GearEditInput) async throws -> LocalAppData { throw Failure.expected }
+  func updatePurchaseRecord(id: String, input: PurchaseEditInput) async throws -> LocalAppData { throw Failure.expected }
+  func createWishlistItem(_ input: WishlistEditInput) async throws -> LocalAppData { throw Failure.expected }
+  func updateWishlistItem(id: String, input: WishlistEditInput) async throws -> LocalAppData { throw Failure.expected }
+  func deleteWishlistItem(id: String) async throws -> LocalAppData { throw Failure.expected }
+  func deleteGearItem(id: String) async throws -> LocalAppData { throw Failure.expected }
+  func reset() async throws -> LocalAppData { throw Failure.expected }
+  func exportBackupData() throws -> Data { throw Failure.expected }
+  func exportBackupPackage() throws -> FileWrapper { throw Failure.expected }
+  func exportBackupPackageData() throws -> Data { throw Failure.expected }
+  func importBackupData(_ data: Data) async throws -> LocalAppData { throw Failure.expected }
+  func importBackupPackage(at url: URL) async throws -> LocalAppData { throw Failure.expected }
+  func importBackupPackageData(_ data: Data) async throws -> LocalAppData { throw Failure.expected }
+}

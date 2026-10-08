@@ -2,6 +2,7 @@ export type GearWallItem = {
   id: string;
   name: string;
   coverImageUrl?: string | null;
+  imageKey?: string | null;
   modelCode?: string | null;
   createdAt?: string;
   latestPurchaseDate?: string | null;

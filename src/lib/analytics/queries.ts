@@ -13,8 +13,9 @@ import { canonicalProductKey, canonicalProductName } from "@/lib/business-rules"
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/server/number";
 
-async function earliestPurchaseDate() {
+async function earliestPurchaseDate(userId: string) {
   const row = await prisma.purchaseRecord.findFirst({
+    where: { userId },
     orderBy: { purchaseDate: "asc" },
     select: { purchaseDate: true }
   });
@@ -26,10 +27,11 @@ function parseYearRange(range: string) {
   return Number.isInteger(year) && year >= 2000 && year <= 3000 ? year : null;
 }
 
-export async function getAnalyticsAvailableYears() {
+export async function getAnalyticsAvailableYears(userId: string) {
   const rows = await prisma.$queryRaw<Array<{ year: number | string }>>`
     SELECT DISTINCT EXTRACT(YEAR FROM purchase_date)::int AS year
     FROM purchase_records
+    WHERE user_id = ${userId}
     ORDER BY year DESC
   `;
 
@@ -38,9 +40,9 @@ export async function getAnalyticsAvailableYears() {
     .filter((year) => Number.isInteger(year));
 }
 
-async function resolveRangeBounds(range = "all", granularity: "month" | "week" = "month") {
+async function resolveRangeBounds(userId: string, range = "all", granularity: "month" | "week" = "month") {
   if (range === "all") {
-    const earliest = await earliestPurchaseDate();
+    const earliest = await earliestPurchaseDate(userId);
     const fallback = granularity === "week"
       ? startOfWeek(new Date(), { weekStartsOn: 1 })
       : startOfMonth(new Date());
@@ -100,7 +102,7 @@ function isShuttleRecord(input: { categoryName?: string | null; itemName: string
   return /羽毛球|亚狮龙|rsl|as-50|as-40|as-30|超牌|威肯|翎美|精彩永恒/i.test(seed);
 }
 
-export async function getOverview() {
+export async function getOverview(userId: string) {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -109,18 +111,22 @@ export async function getOverview() {
     prisma.purchaseRecord.aggregate({
       _sum: { totalPriceCny: true },
       where: {
+        userId,
         purchaseDate: {
           gte: monthStart
         }
       }
     }),
     prisma.purchaseRecord.aggregate({
+      where: { userId },
       _sum: { totalPriceCny: true }
     }),
     prisma.wishlistItem.aggregate({
+      where: { userId },
       _sum: { targetPriceCny: true }
     }),
     prisma.purchaseRecord.findMany({
+      where: { userId },
       take: 5,
       orderBy: { purchaseDate: "desc" },
       include: {
@@ -145,8 +151,8 @@ export async function getOverview() {
   };
 }
 
-export async function getSpendingTrend(range = "all") {
-  const { from, to } = await resolveRangeBounds(range, "month");
+export async function getSpendingTrend(userId: string, range = "all") {
+  const { from, to } = await resolveRangeBounds(userId, range, "month");
 
   const rows = await prisma.$queryRaw<
     Array<{ bucket: Date; amount: Prisma.Decimal | number | string }>
@@ -155,7 +161,8 @@ export async function getSpendingTrend(range = "all") {
       date_trunc('month', purchase_date) AS bucket,
       SUM(total_price_cny) AS amount
     FROM purchase_records
-    WHERE purchase_date >= ${from}
+    WHERE user_id = ${userId}
+      AND purchase_date >= ${from}
       AND purchase_date < ${addMonths(to, 1)}
     GROUP BY 1
     ORDER BY 1 ASC
@@ -180,12 +187,13 @@ export async function getSpendingTrend(range = "all") {
   return result;
 }
 
-export async function getBrandShare(range = "all") {
-  const bounds = await resolveRangeBounds(range, "month");
+export async function getBrandShare(userId: string, range = "all") {
+  const bounds = await resolveRangeBounds(userId, range, "month");
 
   const grouped = await prisma.purchaseRecord.groupBy({
     by: ["brandId"],
     where: {
+      userId,
       purchaseDate: {
         gte: bounds.from,
         lt: addMonths(bounds.to, 1)
@@ -209,12 +217,13 @@ export async function getBrandShare(range = "all") {
   }));
 }
 
-export async function getCategoryShare(range = "all") {
-  const bounds = await resolveRangeBounds(range, "month");
+export async function getCategoryShare(userId: string, range = "all") {
+  const bounds = await resolveRangeBounds(userId, range, "month");
 
   const grouped = await prisma.purchaseRecord.groupBy({
     by: ["categoryId"],
     where: {
+      userId,
       purchaseDate: {
         gte: bounds.from,
         lt: addMonths(bounds.to, 1)
@@ -240,9 +249,9 @@ export async function getCategoryShare(range = "all") {
   }));
 }
 
-export async function getPurchaseFrequency(granularity: "week" | "month", range = "all") {
+export async function getPurchaseFrequency(userId: string, granularity: "week" | "month", range = "all") {
   const trunc = granularity === "week" ? "week" : "month";
-  const { from, to } = await resolveRangeBounds(range, granularity);
+  const { from, to } = await resolveRangeBounds(userId, range, granularity);
 
   const rows = await prisma.$queryRawUnsafe<Array<{ bucket: Date; count: bigint | number }>>(
     `
@@ -250,11 +259,13 @@ export async function getPurchaseFrequency(granularity: "week" | "month", range 
         date_trunc('${trunc}', purchase_date) AS bucket,
         COUNT(*) AS count
       FROM purchase_records
-      WHERE purchase_date >= $1
-        AND purchase_date < $2
+      WHERE user_id = $1
+        AND purchase_date >= $2
+        AND purchase_date < $3
       GROUP BY 1
       ORDER BY 1 ASC
     `,
+    userId,
     from,
     granularity === "month" ? addMonths(to, 1) : addWeeks(to, 1)
   );
@@ -297,10 +308,11 @@ export async function getPurchaseFrequency(granularity: "week" | "month", range 
   return result;
 }
 
-export async function getShuttleInsights(range = "all"): Promise<ShuttleInsights> {
-  const bounds = await resolveRangeBounds(range, "month");
+export async function getShuttleInsights(userId: string, range = "all"): Promise<ShuttleInsights> {
+  const bounds = await resolveRangeBounds(userId, range, "month");
   const records = await prisma.purchaseRecord.findMany({
     where: {
+      userId,
       purchaseDate: {
         gte: bounds.from,
         lt: addMonths(bounds.to, 1)

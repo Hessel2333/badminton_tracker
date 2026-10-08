@@ -83,6 +83,7 @@ function filterByQueryAndCategory(items: CatalogItem[], query: string, categoryI
 export async function GET(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { searchParams } = request.nextUrl;
   const scope = (searchParams.get("scope") ?? "mix").trim().toLowerCase();
@@ -142,6 +143,7 @@ export async function GET(request: NextRequest) {
   });
 
   const latestPurchases = await prisma.purchaseRecord.findMany({
+    where: { userId },
     select: {
       id: true,
       itemNameSnapshot: true,

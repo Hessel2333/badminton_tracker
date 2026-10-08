@@ -24,6 +24,27 @@ const savePegboardLayoutSchema = z.object({
   layout: layoutSnapshotSchema.nullable()
 });
 
+export async function GET() {
+  const auth = await requireSession();
+  if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const preference = await prisma.userPreference.findUnique({
+    where: { userId },
+    select: { pegboardLayouts: true }
+  });
+
+  const layouts =
+    preference?.pegboardLayouts && typeof preference.pegboardLayouts === "object" && !Array.isArray(preference.pegboardLayouts)
+      ? (preference.pegboardLayouts as PegboardLayoutStore)
+      : {};
+
+  return NextResponse.json({ layouts });
+}
+
 export async function PUT(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;

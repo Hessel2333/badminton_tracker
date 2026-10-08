@@ -1,14 +1,16 @@
 import { PurchaseManager } from "@/components/forms/PurchaseManager";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { getPurchasePageData } from "@/lib/server/page-data";
 
-export default function PurchasesLedgerPage() {
+export default async function PurchasesLedgerPage() {
+  const pageData = await getPurchasePageData();
+
   return (
     <div className="space-y-6">
       <SectionTitle
         title="购买台账"
-        subtitle="集中管理历史记录、状态流转与修改。"
       />
-      <PurchaseManager mode="ledger" />
+      <PurchaseManager mode="ledger" {...pageData} />
     </div>
   );
 }

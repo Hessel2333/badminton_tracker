@@ -60,7 +60,7 @@ export function SmartImage({
         sizes={sizes}
         priority={priority}
         loading={priority ? undefined : loading}
-        quality={quality}
+        quality={quality ?? 72}
         onLoad={() => setIsLoaded(true)}
       />
     );

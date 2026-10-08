@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "brandId": "lingmei",
+  "equipment": [
+    {
+      "id": "9f8fa458-e3dc-5fc6-a755-979a0a08c323",
+      "name": "翎美 F6",
+      "model": "F6",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 88,
+      "imageKey": "lingmei_shuttlecock_f6_cutout_01",
+      "popularity": 67,
+      "tags": [
+        "口粮球"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lingmei",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "21a57da6-5bd0-55d8-ab42-e34a8f506601",
+      "name": "翎美 L06",
+      "model": "L06",
+      "series": null,
+      "category": "羽毛球",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 82,
+      "imageKey": "lingmei_shuttlecock_l06_cutout_01",
+      "popularity": 61,
+      "tags": [
+        "日常"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "lingmei",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

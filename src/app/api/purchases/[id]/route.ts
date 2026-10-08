@@ -17,6 +17,7 @@ type Context = {
 export async function PUT(request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   try {
     const { id } = await context.params;
@@ -33,8 +34,8 @@ export async function PUT(request: NextRequest, context: Context) {
       modelCode: input.modelCode ?? undefined
     });
     const item = await prisma.$transaction(async (tx) => {
-      const existing = await tx.purchaseRecord.findUnique({
-        where: { id },
+      const existing = await tx.purchaseRecord.findFirst({
+        where: { id, userId },
         select: { usedUpAt: true, itemStatus: true, gearItemId: true }
       });
       if (!existing) {
@@ -43,6 +44,7 @@ export async function PUT(request: NextRequest, context: Context) {
 
       const brandId = await findOrCreateBrandId(input.brandName ?? null, tx);
       const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
+        userId,
         itemNameSnapshot: canonicalItemName,
         brandName: input.brandName ?? null,
         brandId,
@@ -84,6 +86,7 @@ export async function PUT(request: NextRequest, context: Context) {
 
       if (existing.itemStatus !== input.itemStatus) {
         await createPurchaseEvent(tx, {
+          userId,
           purchaseRecordId: updated.id,
           gearItemId: updated.gearItemId ?? existing.gearItemId,
           eventType:
@@ -95,8 +98,8 @@ export async function PUT(request: NextRequest, context: Context) {
           quantityDelta: input.itemStatus === "USED_UP" || input.itemStatus === "WORN_OUT" ? -updated.quantity : 0,
           fromStatus: existing.itemStatus,
           toStatus: input.itemStatus,
-          eventAt: input.itemStatus === "USED_UP" ? (updated.usedUpAt ?? new Date()) : new Date()
-        });
+        eventAt: input.itemStatus === "USED_UP" ? (updated.usedUpAt ?? new Date()) : new Date()
+      });
       }
 
       return updated;
@@ -119,10 +122,14 @@ export async function PUT(request: NextRequest, context: Context) {
 export async function DELETE(_request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   try {
     const { id } = await context.params;
-    await prisma.purchaseRecord.delete({ where: { id } });
+    const result = await prisma.purchaseRecord.deleteMany({ where: { id, userId } });
+    if (result.count === 0) {
+      return NextResponse.json({ error: "记录不存在" }, { status: 404 });
+    }
     await revalidatePurchaseDerivedData();
     return NextResponse.json({ ok: true });
   } catch (error) {

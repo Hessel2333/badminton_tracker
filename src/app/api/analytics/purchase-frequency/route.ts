@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: rangeParsed.error.flatten() }, { status: 400 });
   }
 
-  const data = await getPurchaseFrequency(parsed.data.granularity, rangeParsed.data.range);
+  const data = await getPurchaseFrequency(auth.session.user.id, parsed.data.granularity, rangeParsed.data.range);
   return NextResponse.json({
     granularity: parsed.data.granularity,
     range: rangeParsed.data.range,

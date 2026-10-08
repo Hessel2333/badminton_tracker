@@ -18,6 +18,7 @@ type Context = {
 export async function PATCH(request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
   const body = await request.json();
@@ -29,8 +30,8 @@ export async function PATCH(request: NextRequest, context: Context) {
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
-      const existing = await tx.purchaseRecord.findUnique({
-        where: { id }
+      const existing = await tx.purchaseRecord.findFirst({
+        where: { id, userId }
       });
 
       if (!existing) {
@@ -60,6 +61,7 @@ export async function PATCH(request: NextRequest, context: Context) {
               : PurchaseEventType.STATUS_CHANGED;
 
         await createPurchaseEvent(tx, {
+          userId,
           purchaseRecordId: existing.id,
           gearItemId: existing.gearItemId,
           eventType,

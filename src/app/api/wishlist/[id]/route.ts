@@ -15,6 +15,7 @@ type Context = {
 export async function PUT(request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
 
@@ -39,8 +40,17 @@ export async function PUT(request: NextRequest, context: Context) {
   });
   const brandId = await findOrCreateBrandId(input.brandName ?? null);
 
+  const existing = await prisma.wishlistItem.findFirst({
+    where: { id, userId },
+    select: { id: true }
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "记录不存在" }, { status: 404 });
+  }
+
   const item = await prisma.wishlistItem.update({
-    where: { id },
+    where: { id: existing.id },
     data: {
       name: canonicalName,
       brandId,
@@ -68,12 +78,14 @@ export async function PUT(request: NextRequest, context: Context) {
 export async function DELETE(_: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
 
-  await prisma.wishlistItem.delete({
-    where: { id }
-  });
+  const result = await prisma.wishlistItem.deleteMany({ where: { id, userId } });
+  if (result.count === 0) {
+    return NextResponse.json({ error: "记录不存在" }, { status: 404 });
+  }
 
   await revalidateWishlistDerivedData();
 

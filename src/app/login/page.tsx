@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, BarChart3, GalleryHorizontal, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { BrandMark } from "@/components/entry/BrandMark";
 import { Button } from "@/components/ui/Button";
@@ -13,11 +12,13 @@ function normalizeCallbackPath(input?: string | null) {
   if (!input) return "/dashboard";
 
   try {
-    const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:3009";
     const url = new URL(input, base);
     const nextPath = `${url.pathname}${url.search}${url.hash}`;
+    if (nextPath === "/") return "/dashboard";
     return nextPath.startsWith("/") ? nextPath : "/dashboard";
   } catch {
+    if (input === "/") return "/dashboard";
     return input.startsWith("/") ? input : "/dashboard";
   }
 }
@@ -71,40 +72,15 @@ export default function LoginPage() {
         <section className="relative flex flex-col overflow-hidden rounded-[32px] border border-[color:color-mix(in_srgb,var(--accent)_12%,var(--border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--panel-3)_90%,white)_0%,color-mix(in_srgb,var(--panel-2)_95%,var(--bg))_100%)] p-6 shadow-[inset_0_1px_0_var(--glass-border)] md:p-8">
           <div className="mb-8 flex items-center justify-between gap-4">
             <BrandMark />
-            <Link
-              href="/"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-sm font-medium text-[color:var(--text-mute)] transition-colors duration-200 hover:border-[var(--border-strong)] hover:bg-[color:var(--panel-2)] hover:text-text"
-            >
-              <ArrowLeft size={15} />
-              返回首页
-            </Link>
           </div>
 
-          <div className="max-w-[34rem]">
+          <div className="max-w-[28rem]">
             <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[color:var(--text-mute)]">
-              Private Archive Login
+              Private Archive
             </div>
             <h1 className="mt-4 max-w-[9ch] font-display text-[clamp(2.45rem,5vw,4.3rem)] leading-[0.95] tracking-[-0.07em] text-text">
-              登录后继续维护你的羽球轨迹。
+              羽球档案台
             </h1>
-            <p className="mt-5 max-w-[27rem] text-[15px] leading-8 text-[color:color-mix(in_srgb,var(--text)_74%,var(--text-mute)_26%)] md:text-[16px]">
-              进入后先看档案状态，再去装备墙、洞洞板和分析看板继续整理。
-            </p>
-          </div>
-
-          <div className="mt-10 flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
-              <ShieldCheck className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-              装备墙：先看状态
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
-              <GalleryHorizontal className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-              洞洞板：再看陈列
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[color:color-mix(in_srgb,var(--accent)_6%,var(--panel-2))] px-4 py-2 text-sm text-[color:color-mix(in_srgb,var(--text)_88%,var(--text-mute)_12%)]">
-              <BarChart3 className="h-4 w-4 text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]" />
-              分析看板：最后做判断
-            </div>
           </div>
         </section>
 
@@ -118,11 +94,8 @@ export default function LoginPage() {
                 Sign In
               </div>
               <h2 className="mt-3 font-display text-[2rem] font-semibold tracking-[-0.05em] text-text">
-                欢迎回来
+                登录
               </h2>
-              <p className="mt-2 text-sm leading-7 text-[color:var(--text-mute)]">
-                登录后继续管理装备、购买记录、心愿单与分析视图。
-              </p>
             </div>
 
             <div className="mt-6 space-y-4">
@@ -172,16 +145,6 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <div className="mt-6 grid gap-3 border-t border-[var(--border)] pt-5 text-xs leading-6 text-[color:var(--text-mute)]">
-              <div className="flex items-center justify-between gap-4">
-                <span>登录后默认跳转</span>
-                <span className="font-medium text-text">/dashboard</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span>入口定位</span>
-                <span className="font-medium text-text">单账号私域工作台</span>
-              </div>
-            </div>
           </form>
         </section>
       </div>

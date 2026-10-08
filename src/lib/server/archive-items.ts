@@ -2,11 +2,12 @@ import { unstable_cache } from "next/cache";
 
 import type { GearWallItem } from "@/components/forms/gear-wall-types";
 import { prisma } from "@/lib/prisma";
+import { imageKeyFromUrl } from "@/lib/server/image-key";
 import { toNumber } from "@/lib/server/number";
 
 export const ARCHIVE_ITEMS_TAG = "archive-items";
 
-async function queryArchiveItems(): Promise<GearWallItem[]> {
+async function queryArchiveItems(userId: string): Promise<GearWallItem[]> {
   // 用 SQL 在服务端聚合出 GearWallItem 所需的“总量/在用/用完/损坏 + 最近一次购入信息 + 最近评分”，
   // 避免 Prisma include 把所有 purchases 全量拉回再在 JS 里 reduce/sort（会导致 RSC 渲染变慢）。
   const rows = await prisma.$queryRawUnsafe<Array<{
@@ -24,7 +25,8 @@ async function queryArchiveItems(): Promise<GearWallItem[]> {
     active_quantity: bigint | number;
     used_up_quantity: bigint | number;
     worn_out_quantity: bigint | number;
-  }>>(`
+  }>>(
+    `
     SELECT
       g.id,
       g.name,
@@ -56,6 +58,7 @@ async function queryArchiveItems(): Promise<GearWallItem[]> {
         COALESCE(SUM(pr.quantity) FILTER (WHERE pr.item_status = 'WORN_OUT'), 0) AS worn_out_quantity
       FROM purchase_records pr
       WHERE pr.gear_item_id = g.id
+        AND pr.user_id = $1
     ) ps ON TRUE
 
     -- 最近一次购入（用于 latestPurchaseDate + referenceUnitPriceCny）
@@ -65,6 +68,7 @@ async function queryArchiveItems(): Promise<GearWallItem[]> {
         pr.unit_price_cny AS reference_unit_price_cny
       FROM purchase_records pr
       WHERE pr.gear_item_id = g.id
+        AND pr.user_id = $1
       ORDER BY pr.purchase_date DESC
       LIMIT 1
     ) lp ON TRUE
@@ -79,18 +83,23 @@ async function queryArchiveItems(): Promise<GearWallItem[]> {
       LIMIT 1
     ) rl ON TRUE
 
-    WHERE EXISTS (
+    WHERE g.user_id = $1
+      AND EXISTS (
       SELECT 1
       FROM purchase_records pr
       WHERE pr.gear_item_id = g.id
+        AND pr.user_id = $1
     )
     ORDER BY g.created_at DESC
-  `);
+  `,
+    userId
+  );
 
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
     coverImageUrl: row.cover_image_url,
+    imageKey: imageKeyFromUrl(row.cover_image_url),
     modelCode: row.model_code,
     createdAt: row.created_at.toISOString(),
 

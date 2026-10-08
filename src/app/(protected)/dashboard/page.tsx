@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ItemStatus } from "@prisma/client";
-import { ArrowRight, BarChart3, GalleryHorizontal, Grid, Layout, Package2 } from "lucide-react";
+import { Layout, Package2 } from "lucide-react";
 
 import { Card } from "@/components/ui/Card";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { currency, dateText } from "@/lib/utils";
 import { getCachedDashboardData } from "@/lib/server/dashboard-data";
+import { getCurrentUserId } from "@/lib/server/auth-guard";
 import { toNumber } from "@/lib/server/number";
 
 export const revalidate = 60;
@@ -29,27 +30,6 @@ const statusMeta = {
   }
 } as const;
 
-const moduleLinks = [
-  {
-    href: "/gear-wall",
-    title: "装备墙",
-    summary: "先看你现在拥有什么、各自是什么状态。",
-    icon: Grid
-  },
-  {
-    href: "/gear-board",
-    title: "洞洞板",
-    summary: "把同一批装备切换到更偏陈列与偏好的观察方式。",
-    icon: GalleryHorizontal
-  },
-  {
-    href: "/analytics",
-    title: "分析看板",
-    summary: "当你要判断下一次该买什么时，再去看趋势和占比。",
-    icon: BarChart3
-  }
-];
-
 function statusBadge(status: ItemStatus) {
   switch (status) {
     case ItemStatus.IN_USE:
@@ -66,17 +46,17 @@ function statusBadge(status: ItemStatus) {
 }
 
 export default async function DashboardPage() {
-  const { overview, archiveState, recentArchive } = await getCachedDashboardData();
+  const userId = await getCurrentUserId();
+  const { overview, archiveState, recentArchive } = await getCachedDashboardData(userId);
 
   return (
     <div className="space-y-6">
       <SectionTitle
         icon={Layout}
-        title="档案状态"
-        subtitle="先看你当前的装备状态，再决定是继续整理陈列，还是转去做分析判断。"
+        title="总览"
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+      <div className="grid gap-5">
         <Card className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-5">
             <div>
@@ -84,7 +64,7 @@ export default async function DashboardPage() {
                 Current Archive
               </p>
               <h2 className="mt-2 font-display text-[1.9rem] tracking-[-0.05em] text-text">
-                你的羽球档案现在是什么状态
+                档案状态
               </h2>
             </div>
             <div className="rounded-full border border-[var(--border)] bg-[color:var(--panel-2)] px-4 py-2 text-xs text-text-mute shadow-[inset_0_1px_0_var(--glass-border)]">
@@ -107,9 +87,6 @@ export default async function DashboardPage() {
                     {item.quantity}
                   </div>
                   <div className="mt-2 text-xs leading-6 text-text-mute">{meta.countLabel}</div>
-                  <p className="mt-4 text-sm leading-7 text-[color:color-mix(in_srgb,var(--text)_84%,var(--text-mute)_16%)]">
-                    {item.description}
-                  </p>
                 </div>
               );
             })}
@@ -137,40 +114,6 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="space-y-4">
-          <div className="border-b border-[var(--border)] pb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-mute">
-              Continue With
-            </p>
-            <h2 className="mt-2 font-display text-[1.6rem] tracking-[-0.05em] text-text">
-              接下来去哪里
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {moduleLinks.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="group flex items-start gap-3 rounded-[22px] border border-[color:color-mix(in_srgb,var(--accent)_10%,var(--border))] bg-[color:color-mix(in_srgb,var(--panel-3)_80%,white)] px-4 py-4 transition-all duration-200 hover:border-[color:color-mix(in_srgb,var(--accent)_18%,var(--border))] hover:bg-[color:color-mix(in_srgb,var(--panel-3)_92%,white)]"
-                >
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] bg-[color:color-mix(in_srgb,var(--accent)_9%,var(--panel-2))] text-[color:color-mix(in_srgb,var(--accent)_72%,var(--text)_28%)]">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-medium text-text">{item.title}</h3>
-                      <ArrowRight className="h-4 w-4 text-text-mute transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-text" />
-                    </div>
-                    <p className="mt-1.5 text-sm leading-7 text-text-mute">{item.summary}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </Card>
       </div>
 
       <Card>
@@ -187,7 +130,7 @@ export default async function DashboardPage() {
             href="/gear-wall"
             className="text-sm font-medium text-[color:color-mix(in_srgb,var(--accent)_76%,var(--text)_24%)]"
           >
-            去装备墙查看全量档案
+            全量档案
           </Link>
         </div>
 
@@ -239,7 +182,7 @@ export default async function DashboardPage() {
 
           {!recentArchive.length ? (
             <div className="rounded-[24px] border border-dashed border-[var(--border-strong)] px-6 py-10 text-sm text-text-mute">
-              还没有档案记录。先去“新增购买”录入第一件装备，再回来回看你的状态。
+              暂无档案记录。
             </div>
           ) : null}
         </div>

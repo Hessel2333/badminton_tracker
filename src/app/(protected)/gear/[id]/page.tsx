@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GearDetailEditor } from "@/components/forms/GearDetailEditor";
 import { canonicalOptionalBrandDisplayName, canonicalProductName } from "@/lib/business-rules";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserId } from "@/lib/server/auth-guard";
 import { toNumber } from "@/lib/server/number";
 
 type Props = {
@@ -11,10 +12,11 @@ type Props = {
 
 export default async function GearDetailPage({ params }: Props) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
 
   const [item, categories] = await Promise.all([
-    prisma.gearItem.findUnique({
-      where: { id },
+    prisma.gearItem.findFirst({
+      where: { id, userId },
       select: {
         id: true,
         name: true,

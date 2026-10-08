@@ -1,19 +1,32 @@
 "use client";
 
-import { motion, HTMLMotionProps } from "framer-motion";
+import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type CardProps = HTMLMotionProps<"div"> & {
-  /** 是否执行入场动画。对静态容器（如表单区域）设为 false 避免状态更新时重复触发。默认 true */
+type CardProps = HTMLAttributes<HTMLDivElement> & {
   entryAnimation?: boolean;
+  initial?: unknown;
+  animate?: unknown;
+  exit?: unknown;
+  transition?: unknown;
+  whileTap?: unknown;
+  whileHover?: unknown;
 };
 
-export function Card({ children, className, entryAnimation = true, ...props }: CardProps) {
+export function Card({
+  children,
+  className,
+  entryAnimation: _entryAnimation,
+  initial: _initial,
+  animate: _animate,
+  exit: _exit,
+  transition: _transition,
+  whileTap: _whileTap,
+  whileHover: _whileHover,
+  ...props
+}: CardProps) {
   return (
-    <motion.div
-      initial={entryAnimation ? { opacity: 0, y: 12 } : false}
-      animate={entryAnimation ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+    <div
       className={cn(
         "card-gradient rounded-[28px] p-6 md:p-7",
         className
@@ -21,6 +34,6 @@ export function Card({ children, className, entryAnimation = true, ...props }: C
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

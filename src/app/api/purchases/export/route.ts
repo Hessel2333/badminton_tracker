@@ -8,8 +8,10 @@ import { toNumber } from "@/lib/server/number";
 export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const rows = await prisma.purchaseRecord.findMany({
+    where: { userId },
     include: {
       category: true,
       brand: true,

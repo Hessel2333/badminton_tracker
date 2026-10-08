@@ -20,6 +20,7 @@ import { purchaseSchema } from "@/lib/validators/purchase";
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   try {
     const body = await request.json();
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
     const item = await prisma.$transaction(async (tx) => {
       const brandId = await findOrCreateBrandId(input.brandName ?? null, tx);
       const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
+        userId,
         itemNameSnapshot: canonicalItemName,
         brandName: input.brandName ?? null,
         brandId,
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest) {
 
       const created = await tx.purchaseRecord.create({
         data: {
+          userId,
           gearItemId,
           brandId,
           categoryId: input.categoryId ?? null,
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
       });
 
       await createPurchaseEvent(tx, {
+        userId,
         purchaseRecordId: created.id,
         gearItemId: created.gearItemId,
         eventType: "PURCHASED",
@@ -111,6 +115,7 @@ export async function GET(request: NextRequest) {
   const metrics = createRequestMetrics("api.purchases.get");
   const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { searchParams } = request.nextUrl;
   const brandId = searchParams.get("brandId") ?? undefined;
@@ -130,6 +135,7 @@ export async function GET(request: NextRequest) {
     pageSize === DEFAULT_PURCHASE_PAGE_SIZE;
 
   const where: Prisma.PurchaseRecordWhereInput = {
+    userId,
     brandId,
     categoryId,
     purchaseDate: {
@@ -139,7 +145,7 @@ export async function GET(request: NextRequest) {
   };
 
   if (shouldUseDefaultCache) {
-    const items = await metrics.track("cache", () => getCachedDefaultPurchaseRecords());
+    const items = await metrics.track("cache", () => getCachedDefaultPurchaseRecords(userId));
     metrics.log({ cached: true, pageSize });
     return NextResponse.json(
       {

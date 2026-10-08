@@ -13,6 +13,7 @@ import { wishlistSchema } from "@/lib/validators/wishlist";
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const body = await request.json();
   const parsed = wishlistSchema.safeParse(body);
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
 
   const item = await prisma.wishlistItem.create({
     data: {
+      userId,
       name: canonicalName,
       brandId,
       categoryId: input.categoryId ?? null,
@@ -64,6 +66,7 @@ export async function GET(request: NextRequest) {
   const metrics = createRequestMetrics("api.wishlist.get");
   const auth = await metrics.track("auth", () => requireSession());
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const statusParam = request.nextUrl.searchParams.get("status");
   const status =
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
       ? (statusParam as WishlistStatus)
       : undefined;
 
-  const items = await metrics.track("cache", () => getCachedWishlistRecordsByStatus(status));
+  const items = await metrics.track("cache", () => getCachedWishlistRecordsByStatus(userId, status));
   metrics.log({ status: status ?? "all" });
 
   return NextResponse.json(

@@ -12,6 +12,7 @@ import { gearCreateSchema } from "@/lib/validators/gear";
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const body = await request.json();
   const parsed = gearCreateSchema.safeParse(body);
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
   const created = await prisma.$transaction(async (tx) => {
     const gear = await tx.gearItem.create({
       data: {
+        userId,
         name: canonicalName,
         brandId,
         categoryId: input.categoryId ?? null,
@@ -109,6 +111,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { searchParams } = request.nextUrl;
   const brandId = searchParams.get("brandId") ?? undefined;
@@ -118,6 +121,7 @@ export async function GET(request: NextRequest) {
   const view = searchParams.get("view") ?? "full";
 
   const where = {
+    userId,
     brandId,
     categoryId,
     ...(q

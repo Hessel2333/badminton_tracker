@@ -83,31 +83,6 @@ export function GearWallManager({
   );
   const [sortBy, setSortBy] = useState<SortOption>("recent_purchase_desc");
 
-  if (initialItems.length === 0) {
-    return (
-      <Card
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center py-24 text-center"
-      >
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-accent/10 text-accent">
-          <ShieldCheck size={40} strokeWidth={1.5} />
-        </div>
-        <h2 className="font-display text-xl font-bold text-text">你的装备墙还空着</h2>
-        <p className="mt-2 text-sm text-text-mute max-w-xs mx-auto">
-          记录下的不仅仅是羽毛球装备，更是那一次次挥拍的热血与回忆。
-        </p>
-        <div className="mt-8">
-          <Link href="/purchases">
-            <Button size="lg" className="rounded-2xl shadow-lg shadow-accent/20">
-              去录入第一件装备
-            </Button>
-          </Link>
-        </div>
-      </Card>
-    );
-  }
-
   const filteredSortedItems = useMemo(() => {
     const filtered = initialItems.filter((item) => {
       if (categoryFilter === "ALL") return true;
@@ -166,6 +141,28 @@ export function GearWallManager({
     return sorted;
   }, [categoryFilter, initialItems, sortBy]);
 
+  if (initialItems.length === 0) {
+    return (
+      <Card
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center py-24 text-center"
+      >
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-accent/10 text-accent">
+          <ShieldCheck size={40} strokeWidth={1.5} />
+        </div>
+        <h2 className="font-display text-xl font-bold text-text">暂无装备</h2>
+        <div className="mt-8">
+          <Link href="/purchases">
+            <Button size="lg" className="rounded-2xl shadow-lg shadow-accent/20">
+              新增装备
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <ControlPanel
@@ -214,8 +211,7 @@ export function GearWallManager({
                         alt={item.name}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        priority={index < 4}
-                        loading={index < 8 ? "eager" : "lazy"}
+                        loading="lazy"
                         className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (

@@ -13,9 +13,9 @@ type Context = {
   params: Promise<{ id: string }>;
 };
 
-async function getGearDetail(id: string) {
-  return prisma.gearItem.findUnique({
-    where: { id },
+async function getGearDetail(id: string, userId: string) {
+  return prisma.gearItem.findFirst({
+    where: { id, userId },
     include: {
       brand: true,
       category: true,
@@ -42,9 +42,10 @@ async function getGearDetail(id: string) {
 export async function GET(_request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
-  const item = await getGearDetail(id);
+  const item = await getGearDetail(id, userId);
 
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -56,6 +57,7 @@ export async function GET(_request: NextRequest, context: Context) {
 export async function PUT(request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
   const body = await request.json();
@@ -65,8 +67,8 @@ export async function PUT(request: NextRequest, context: Context) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const existing = await prisma.gearItem.findUnique({
-    where: { id },
+  const existing = await prisma.gearItem.findFirst({
+    where: { id, userId },
     select: { id: true }
   });
 
@@ -109,7 +111,7 @@ export async function PUT(request: NextRequest, context: Context) {
     });
 
     await tx.purchaseRecord.updateMany({
-      where: { gearItemId: id },
+      where: { gearItemId: id, userId },
       data: {
         itemNameSnapshot: canonicalName,
         brandId,
@@ -177,8 +179,8 @@ export async function PUT(request: NextRequest, context: Context) {
       }
     }
 
-    return tx.gearItem.findUnique({
-      where: { id },
+    return tx.gearItem.findFirst({
+      where: { id, userId },
       include: {
         brand: true,
         category: true,

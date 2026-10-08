@@ -95,6 +95,11 @@ type WishlistSourceItem = {
 
 type PurchaseManagerMode = "entry" | "ledger" | "all";
 
+const EMPTY_PURCHASE_ROWS: PurchaseRow[] = [];
+const EMPTY_CATEGORIES: Category[] = [];
+const EMPTY_CATALOG_ITEMS: CatalogSuggestion[] = [];
+const EMPTY_WISHLIST_ITEMS: WishlistSourceItem[] = [];
+
 function isLibraryView(value: unknown): value is "list" | "card" {
   return value === "list" || value === "card";
 }
@@ -286,11 +291,11 @@ export function PurchaseManager({
       revalidateOnMount: !fallbackWishlist
     });
 
-  const items = purchaseData?.items ?? [];
-  const categories = categoryData?.items ?? [];
+  const items = purchaseData?.items ?? EMPTY_PURCHASE_ROWS;
+  const categories = categoryData?.items ?? EMPTY_CATEGORIES;
   const loading = purchaseLoading;
-  const libraryItems = libraryData?.items ?? [];
-  const wishlistItems = wishlistData?.items ?? [];
+  const libraryItems = libraryData?.items ?? EMPTY_CATALOG_ITEMS;
+  const wishlistItems = wishlistData?.items ?? EMPTY_WISHLIST_ITEMS;
   const isEntryVisible = mode === "entry" || mode === "all";
   const isLedgerVisible = mode === "ledger" || mode === "all";
   const categoryFilterItems = useMemo(
@@ -783,8 +788,7 @@ export function PurchaseManager({
                                 alt={item.name}
                                 fill
                                 sizes="56px"
-                                priority={index < 6}
-                                loading={index < 10 ? "eager" : "lazy"}
+                                loading="lazy"
                                 className="object-contain"
                               />
                             </div>
@@ -859,8 +863,7 @@ export function PurchaseManager({
                                   alt={item.name}
                                   fill
                                   sizes="(max-width: 640px) 50vw, (max-width: 1280px) 25vw, 20vw"
-                                  priority={index < 4}
-                                  loading={index < 8 ? "eager" : "lazy"}
+                                  loading="lazy"
                                   className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
                                 />
                               ) : (
@@ -939,11 +942,6 @@ export function PurchaseManager({
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-[1.75rem] leading-none text-neon">新增购买记录</h2>
-                <p className="mt-2 text-sm text-text-mute">
-                  {isPresetCreateSource && form.itemNameSnapshot
-                    ? `为「${form.itemNameSnapshot}」补充价格、数量、时间与渠道信息。`
-                    : "补全成交信息后，这件装备就会进入你的档案。"}
-                </p>
               </div>
               <Button type="button" variant="ghost" onClick={closeCreateModal}>
                 关闭
@@ -954,12 +952,9 @@ export function PurchaseManager({
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="accent">来自心愿单</Badge>
                   <span className="text-sm text-text">
-                    保存后会将「{wishlistSourceItem.name}」同步标记为已购。
+                    {wishlistSourceItem.name}
                   </span>
                 </div>
-                <p className="mt-2 text-xs leading-6 text-text-mute">
-                  这里优先补价格、数量、状态和日期；名称、品牌、分类和图片已经从心愿单带入，可按实际成交再微调。
-                </p>
               </div>
             ) : null}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -967,11 +962,6 @@ export function PurchaseManager({
                 <div className="rounded-[28px] border border-border bg-panel/78 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <div className="mb-4">
                     <div className="text-xs uppercase tracking-[0.28em] text-mute">装备信息</div>
-                    <p className="mt-2 text-sm text-text-mute">
-                      {isPresetCreateSource
-                        ? "这些信息已从装备库带入并锁定，若需要修正基础资料，请到设置中维护。"
-                        : "确认这件装备的名称、品牌和分类，避免后续档案归类混乱。"}
-                    </p>
                   </div>
                   {isPresetCreateSource ? (
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -1040,7 +1030,6 @@ export function PurchaseManager({
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-mute">购买信息</div>
-                      <p className="mt-2 text-sm text-text-mute">先补金额和数量，再确认时间、渠道和当前状态。</p>
                     </div>
                     <div className="rounded-[20px] border border-accent/16 bg-accent/[0.05] px-4 py-3 text-right">
                       <div className="text-[11px] uppercase tracking-[0.22em] text-mute">预估总价</div>
@@ -1153,7 +1142,6 @@ export function PurchaseManager({
                 <div className="rounded-[28px] border border-border bg-panel/78 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <div className="mb-3">
                     <div className="text-xs uppercase tracking-[0.28em] text-mute">备注</div>
-                    <p className="mt-2 text-sm text-text-mute">只写对后续判断有帮助的信息，例如入手原因、版本差异或实际体验。</p>
                   </div>
                   <Textarea
                     rows={4}
@@ -1169,9 +1157,6 @@ export function PurchaseManager({
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-mute">封面图</div>
-                      <div className="mt-1 text-sm text-text-mute">
-                        {isPresetCreateSource ? "已从装备库带入，当前记录中不可编辑。" : "可选，保存后也能再补。"}
-                      </div>
                     </div>
                     <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-mute">
                       {selectedCreateCategoryName}
@@ -1191,20 +1176,10 @@ export function PurchaseManager({
                         <div className="rounded-full border border-dashed border-border px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-mute">
                           no preview
                         </div>
-                        <p className="text-xs leading-6 text-text-mute">
-                          暂时没有封面图也可以先保存记录。
-                        </p>
                       </div>
                     )}
                   </div>
-                  {isPresetCreateSource ? (
-                    <div className="mt-4 rounded-[22px] border border-border bg-panel-2 px-4 py-3">
-                      <div className="text-[11px] uppercase tracking-[0.22em] text-mute">说明</div>
-                      <p className="mt-2 text-sm leading-6 text-text-mute">
-                        基础资料与封面图已固定带入。若发现型号、品类或图片有误，请前往设置中维护装备库数据。
-                      </p>
-                    </div>
-                  ) : (
+                  {!isPresetCreateSource ? (
                     <div className="mt-4 space-y-3">
                       <label className="block">
                         <span className="mb-1.5 block text-xs uppercase tracking-widest text-mute">上传图片</span>
@@ -1234,18 +1209,14 @@ export function PurchaseManager({
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         {uploadingCreateImage ? <span className="text-accent">图片上传中...</span> : null}
                         {createImageError ? <span className="text-danger">{createImageError}</span> : null}
-                        {!uploadingCreateImage && !createImageError && form.gearCoverImageUrl ? (
-                          <span className="text-text-mute">当前预览会写入该装备封面</span>
-                        ) : null}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </aside>
             </div>
 
             <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-mute">保存后会新增一条购买记录，并同步刷新项目档案。</div>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button type="button" variant="secondary" onClick={closeCreateModal} className="w-full sm:min-w-[6.5rem] sm:w-auto">
                   取消
@@ -1266,12 +1237,15 @@ export function PurchaseManager({
             <div className="flex items-center gap-3">
               <span className="text-xs font-medium text-mute tabular-nums">{items.length} 条记录</span>
               <div className="flex items-center gap-2">
-                <a
+                <button
+                  type="button"
                   className="rounded-xl border border-border bg-panel px-3 py-2 text-xs font-medium text-text transition hover:bg-border/40 hover:shadow-sm"
-                  href="/api/purchases/export"
+                  onClick={() => {
+                    window.location.href = "/api/purchases/export";
+                  }}
                 >
                   导出 CSV
-                </a>
+                </button>
                 <label className="cursor-pointer rounded-xl border border-border bg-panel px-3 py-2 text-xs font-medium text-text transition hover:bg-border/40 hover:shadow-sm">
                   导入 CSV
                   <input
@@ -1372,9 +1346,6 @@ export function PurchaseManager({
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-display text-[1.75rem] leading-none text-neon">编辑购买记录</h2>
-                <p className="mt-2 text-sm text-text-mute">
-                  为「{editForm.itemNameSnapshot || "当前记录"}」调整成交信息与当前状态。
-                </p>
               </div>
               <Button type="button" variant="ghost" onClick={closeEdit}>
                 关闭
@@ -1386,7 +1357,6 @@ export function PurchaseManager({
                 <div className="rounded-[28px] border border-border bg-panel/78 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <div className="mb-4">
                     <div className="text-xs uppercase tracking-[0.28em] text-mute">装备信息</div>
-                    <p className="mt-2 text-sm text-text-mute">这里沿用新增购买的结构，便于回头修正品牌、型号和分类。</p>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <div className="md:col-span-2">
@@ -1431,7 +1401,6 @@ export function PurchaseManager({
                   <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-mute">购买信息</div>
-                      <p className="mt-2 text-sm text-text-mute">更新金额、数量、时间、渠道和状态，档案时间线会随之同步。</p>
                     </div>
                     <div className="rounded-[20px] border border-accent/16 bg-accent/[0.05] px-4 py-3 text-right">
                       <div className="text-[11px] uppercase tracking-[0.22em] text-mute">预估总价</div>
@@ -1544,7 +1513,6 @@ export function PurchaseManager({
                 <div className="rounded-[28px] border border-border bg-panel/78 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <div className="mb-3">
                     <div className="text-xs uppercase tracking-[0.28em] text-mute">备注</div>
-                    <p className="mt-2 text-sm text-text-mute">保留能帮助回看这次购买判断的信息。</p>
                   </div>
                   <Textarea
                     rows={4}
@@ -1560,7 +1528,6 @@ export function PurchaseManager({
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-xs uppercase tracking-[0.28em] text-mute">封面图</div>
-                      <div className="mt-1 text-sm text-text-mute">沿用当前装备封面。</div>
                     </div>
                     <span className="rounded-full border border-border px-2.5 py-1 text-[11px] text-text-mute">
                       {categories.find((item) => item.id === editForm.categoryId)?.name ?? "未分类"}
@@ -1580,22 +1547,14 @@ export function PurchaseManager({
                         <div className="rounded-full border border-dashed border-border px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-mute">
                           no preview
                         </div>
-                        <p className="text-xs leading-6 text-text-mute">这条记录当前没有关联封面图。</p>
                       </div>
                     )}
-                  </div>
-                  <div className="mt-4 rounded-[22px] border border-border bg-panel-2 px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-[0.22em] text-mute">说明</div>
-                    <p className="mt-2 text-sm leading-6 text-text-mute">
-                      编辑购买记录会同步影响该装备的生命周期时间线与状态统计。
-                    </p>
                   </div>
                 </div>
               </aside>
             </div>
 
             <div className="mt-6 flex flex-col gap-3 border-t border-border/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-mute">保存后会更新该条购买记录，并同步刷新购买台账。</div>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button type="button" variant="secondary" onClick={closeEdit} className="w-full sm:min-w-[6.5rem] sm:w-auto">
                   取消

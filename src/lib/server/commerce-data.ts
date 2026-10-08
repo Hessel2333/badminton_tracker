@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { Prisma, WishlistStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { imageKeyFromUrl } from "@/lib/server/image-key";
 import { toNumber } from "@/lib/server/number";
 
 export const PURCHASES_TAG = "purchases-data";
@@ -63,7 +64,12 @@ export function serializePurchaseRow(item: PurchaseListRecord) {
     brandId: item.brandId,
     categoryId: item.categoryId,
     itemNameSnapshot: item.itemNameSnapshot,
-    gearItem: item.gearItem,
+    gearItem: item.gearItem
+      ? {
+          ...item.gearItem,
+          imageKey: imageKeyFromUrl(item.gearItem.coverImageUrl)
+        }
+      : null,
     brand: item.brand,
     category: item.category,
     unitPriceCny: toNumber(item.unitPriceCny),
@@ -84,8 +90,9 @@ export function serializeWishlistItem(item: WishlistRecord) {
   };
 }
 
-export async function queryDefaultPurchaseRecords(pageSize = DEFAULT_PURCHASE_PAGE_SIZE) {
+export async function queryDefaultPurchaseRecords(userId: string, pageSize = DEFAULT_PURCHASE_PAGE_SIZE) {
   return prisma.purchaseRecord.findMany({
+    where: { userId },
     select: purchaseListSelect,
     orderBy: { purchaseDate: "desc" },
     take: pageSize
@@ -93,7 +100,7 @@ export async function queryDefaultPurchaseRecords(pageSize = DEFAULT_PURCHASE_PA
 }
 
 export const getCachedDefaultPurchaseRecords = unstable_cache(
-  async () => queryDefaultPurchaseRecords(DEFAULT_PURCHASE_PAGE_SIZE),
+  async (userId: string) => queryDefaultPurchaseRecords(userId, DEFAULT_PURCHASE_PAGE_SIZE),
   ["purchase-records-default"],
   {
     tags: [PURCHASES_TAG],
@@ -102,8 +109,9 @@ export const getCachedDefaultPurchaseRecords = unstable_cache(
 );
 
 export const getCachedWishlistRecords = unstable_cache(
-  async () =>
+  async (userId: string) =>
     prisma.wishlistItem.findMany({
+      where: { userId },
       include: {
         brand: true,
         category: true
@@ -117,8 +125,8 @@ export const getCachedWishlistRecords = unstable_cache(
   }
 );
 
-export async function getCachedWishlistRecordsByStatus(status?: WishlistStatus) {
-  const items = await getCachedWishlistRecords();
+export async function getCachedWishlistRecordsByStatus(userId: string, status?: WishlistStatus) {
+  const items = await getCachedWishlistRecords(userId);
   if (!status) return items;
   return items.filter((item) => item.status === status);
 }

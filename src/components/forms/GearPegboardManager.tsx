@@ -1458,7 +1458,7 @@ export function GearPegboardManager({
   if (initialItems.length === 0) {
     return (
       <Card className="py-14 text-center">
-        <p className="text-text-mute">还没有可展示装备，先去购买记录新增一条。</p>
+        <p className="text-text-mute">暂无可展示装备。</p>
         <div className="mt-4">
           <Link href="/purchases">
             <Button>新增购买记录</Button>
@@ -1479,7 +1479,7 @@ export function GearPegboardManager({
           />
         </ControlPanel>
         <Card className="py-14 text-center">
-          <p className="text-text-mute">当前没有在用装备，切到“显示历史”可以查看已用完或已退役的装备。</p>
+          <p className="text-text-mute">暂无在用装备。</p>
         </Card>
       </div>
     );

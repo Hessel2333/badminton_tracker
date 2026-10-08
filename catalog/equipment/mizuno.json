@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "brandId": "mizuno",
+  "equipment": [
+    {
+      "id": "6ca9cf11-eeb9-534d-9711-f83b4a3d6209",
+      "name": "Mizuno 65Z C-90",
+      "model": "65Z C-90",
+      "series": null,
+      "category": "球鞋",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 699,
+      "imageKey": null,
+      "popularity": 76,
+      "tags": [
+        "轻量"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "mizuno",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

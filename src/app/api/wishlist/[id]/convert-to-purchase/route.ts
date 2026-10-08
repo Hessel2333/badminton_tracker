@@ -17,6 +17,7 @@ type Context = {
 export async function POST(request: NextRequest, context: Context) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const { id } = await context.params;
   const body = await request.json();
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest, context: Context) {
   const input = parsed.data;
 
   const result = await prisma.$transaction(async (tx) => {
-    const wishlist = await tx.wishlistItem.findUnique({ where: { id } });
+    const wishlist = await tx.wishlistItem.findFirst({ where: { id, userId } });
     if (!wishlist) {
       throw new Error("Wishlist item not found");
     }
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest, context: Context) {
     });
 
     const gearItemId = await resolveOrCreateGearItemIdFromPurchase(tx, {
+      userId,
       itemNameSnapshot: canonicalName,
       brandName: nextBrandName,
       brandId,
@@ -67,6 +69,7 @@ export async function POST(request: NextRequest, context: Context) {
 
     const purchase = await tx.purchaseRecord.create({
       data: {
+        userId,
         gearItemId,
         brandId,
         categoryId: nextCategoryId,
@@ -83,6 +86,7 @@ export async function POST(request: NextRequest, context: Context) {
       }
     });
     await createPurchaseEvent(tx, {
+      userId,
       purchaseRecordId: purchase.id,
       gearItemId: purchase.gearItemId,
       eventType: "PURCHASED",

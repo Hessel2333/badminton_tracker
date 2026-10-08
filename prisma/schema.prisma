@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -39,12 +39,17 @@ enum PurchaseEventType {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @default(ADMIN)
-  createdAt    DateTime @default(now()) @map("created_at")
-  preference   UserPreference?
+  id               String            @id @default(cuid())
+  email            String            @unique
+  passwordHash     String            @map("password_hash")
+  role             Role              @default(ADMIN)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  preference       UserPreference?
+  gearItems        GearItem[]
+  purchases        PurchaseRecord[]
+  purchaseEvents   PurchaseEvent[]
+  wishlistItems    WishlistItem[]
+  activitySessions ActivitySession[]
 
   @@map("users")
 }
@@ -103,6 +108,7 @@ model RatingDimension {
 
 model GearItem {
   id            String           @id @default(cuid())
+  userId        String           @map("user_id")
   name          String
   brandId       String?          @map("brand_id")
   categoryId    String?          @map("category_id")
@@ -117,7 +123,9 @@ model GearItem {
   externalViews ExternalReview[]
   purchases     PurchaseRecord[]
   events        PurchaseEvent[]
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([name])
   @@index([brandId])
   @@index([categoryId])
@@ -156,37 +164,42 @@ model ExternalReview {
 }
 
 model PurchaseRecord {
-  id               String    @id @default(cuid())
-  gearItemId       String?   @map("gear_item_id")
-  brandId          String?   @map("brand_id")
-  categoryId       String?   @map("category_id")
-  itemNameSnapshot String    @map("item_name_snapshot")
-  unitPriceCny     Decimal   @map("unit_price_cny") @db.Decimal(12, 2)
-  quantity         Int       @default(1)
-  totalPriceCny    Decimal   @map("total_price_cny") @db.Decimal(12, 2)
-  purchaseDate     DateTime  @map("purchase_date")
-  usedUpAt         DateTime? @map("used_up_at")
+  id               String               @id @default(cuid())
+  userId           String               @map("user_id")
+  gearItemId       String?              @map("gear_item_id")
+  brandId          String?              @map("brand_id")
+  categoryId       String?              @map("category_id")
+  itemNameSnapshot String               @map("item_name_snapshot")
+  unitPriceCny     Decimal              @map("unit_price_cny") @db.Decimal(12, 2)
+  quantity         Int                  @default(1)
+  totalPriceCny    Decimal              @map("total_price_cny") @db.Decimal(12, 2)
+  purchaseDate     DateTime             @map("purchase_date")
+  usedUpAt         DateTime?            @map("used_up_at")
   channel          String?
-  itemStatus       ItemStatus @default(IN_USE) @map("item_status")
-  isSecondHand     Boolean   @default(false) @map("is_second_hand")
+  itemStatus       ItemStatus           @default(IN_USE) @map("item_status")
+  isSecondHand     Boolean              @default(false) @map("is_second_hand")
   notes            String?
-  receiptImageUrl  String?   @map("receipt_image_url")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  gearItem         GearItem? @relation(fields: [gearItemId], references: [id], onDelete: SetNull)
-  brand            Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  receiptImageUrl  String?              @map("receipt_image_url")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  gearItem         GearItem?            @relation(fields: [gearItemId], references: [id], onDelete: SetNull)
+  brand            Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category         Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   wishlistLinks    WishlistTransition[]
   events           PurchaseEvent[]
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([purchaseDate])
   @@index([itemStatus])
   @@index([brandId])
   @@index([categoryId])
+  @@index([gearItemId])
   @@map("purchase_records")
 }
 
 model PurchaseEvent {
   id               String            @id @default(cuid())
+  userId           String            @map("user_id")
   purchaseRecordId String?           @map("purchase_record_id")
   gearItemId       String?           @map("gear_item_id")
   eventType        PurchaseEventType @map("event_type")
@@ -198,7 +211,9 @@ model PurchaseEvent {
   createdAt        DateTime          @default(now()) @map("created_at")
   purchaseRecord   PurchaseRecord?   @relation(fields: [purchaseRecordId], references: [id], onDelete: SetNull)
   gearItem         GearItem?         @relation(fields: [gearItemId], references: [id], onDelete: SetNull)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([purchaseRecordId, eventAt])
   @@index([gearItemId, eventAt])
   @@index([eventType, eventAt])
@@ -207,6 +222,7 @@ model PurchaseEvent {
 
 model WishlistItem {
   id                  String               @id @default(cuid())
+  userId              String               @map("user_id")
   name                String
   brandId             String?              @map("brand_id")
   categoryId          String?              @map("category_id")
@@ -222,35 +238,40 @@ model WishlistItem {
   brand               Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
   category            Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   transitions         WishlistTransition[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([status])
   @@index([priority])
   @@map("wishlist_items")
 }
 
 model WishlistTransition {
-  id              String         @id @default(cuid())
-  wishlistItemId  String         @map("wishlist_item_id")
-  fromStatus      WishlistStatus @map("from_status")
-  toStatus        WishlistStatus @map("to_status")
-  changedAt       DateTime       @default(now()) @map("changed_at")
-  linkedPurchaseId String?       @map("linked_purchase_id")
-  wishlistItem    WishlistItem   @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
-  linkedPurchase  PurchaseRecord? @relation(fields: [linkedPurchaseId], references: [id], onDelete: SetNull)
+  id               String          @id @default(cuid())
+  wishlistItemId   String          @map("wishlist_item_id")
+  fromStatus       WishlistStatus  @map("from_status")
+  toStatus         WishlistStatus  @map("to_status")
+  changedAt        DateTime        @default(now()) @map("changed_at")
+  linkedPurchaseId String?         @map("linked_purchase_id")
+  wishlistItem     WishlistItem    @relation(fields: [wishlistItemId], references: [id], onDelete: Cascade)
+  linkedPurchase   PurchaseRecord? @relation(fields: [linkedPurchaseId], references: [id], onDelete: SetNull)
 
   @@index([wishlistItemId, changedAt])
   @@map("wishlist_transitions")
 }
 
 model ActivitySession {
-  id          String         @id @default(cuid())
-  activityDate DateTime      @map("activity_date")
-  durationMin Int            @map("duration_min")
-  source      ActivitySource @default(MANUAL)
-  externalId  String?        @map("external_id")
-  metaJson    Json?          @map("meta_json")
-  createdAt   DateTime       @default(now()) @map("created_at")
+  id           String         @id @default(cuid())
+  userId       String         @map("user_id")
+  activityDate DateTime       @map("activity_date")
+  durationMin  Int            @map("duration_min")
+  source       ActivitySource @default(MANUAL)
+  externalId   String?        @map("external_id")
+  metaJson     Json?          @map("meta_json")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([activityDate])
   @@map("activity_sessions")
 }

@@ -8,6 +8,7 @@ async function main() {
   const purchases = await prisma.purchaseRecord.findMany({
     select: {
       id: true,
+      userId: true,
       gearItemId: true,
       itemNameSnapshot: true,
       brandId: true,
@@ -21,6 +22,7 @@ async function main() {
   for (const purchase of purchases) {
     const gearItemId = await prisma.$transaction(async (tx) => {
       return resolveOrCreateGearItemIdFromPurchase(tx, {
+        userId: purchase.userId,
         gearItemId: purchase.gearItemId,
         itemNameSnapshot: purchase.itemNameSnapshot,
         brandId: purchase.brandId,
@@ -48,4 +50,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

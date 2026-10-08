@@ -1,14 +1,29 @@
 "use client";
 
-import { motion, HTMLMotionProps } from "framer-motion";
+import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonProps = HTMLMotionProps<"button"> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
+  initial?: unknown;
+  animate?: unknown;
+  transition?: unknown;
+  whileTap?: unknown;
+  whileHover?: unknown;
 };
 
-export function Button({ className, variant = "primary", size = "md", ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant = "primary",
+  size = "md",
+  initial: _initial,
+  animate: _animate,
+  transition: _transition,
+  whileTap: _whileTap,
+  whileHover: _whileHover,
+  ...props
+}: ButtonProps) {
   const variants = {
     primary:
       "border border-transparent bg-[linear-gradient(180deg,color-mix(in_srgb,var(--accent)_82%,white)_0%,var(--accent)_100%)] text-accent-foreground shadow-[0_10px_24px_rgba(0,113,227,0.22)] hover:brightness-[1.03]",
@@ -26,10 +41,7 @@ export function Button({ className, variant = "primary", size = "md", ...props }
   };
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ scale: 1.008 }}
-      transition={{ type: "spring", stiffness: 360, damping: 28 }}
+    <button
       className={cn(
         "inline-flex max-w-full items-center justify-center gap-2 whitespace-nowrap text-center leading-[1.1] font-medium tracking-[-0.01em] transition-[background,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/12 disabled:pointer-events-none disabled:opacity-50",
         variants[variant],

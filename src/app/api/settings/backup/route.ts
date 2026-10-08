@@ -8,16 +8,17 @@ import { revalidateAllCoreData } from "@/lib/server/revalidate-app-data";
 export async function GET() {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   const [brands, categories, gear, purchases, events, projectCatalogOverrides, wishlist, transitions] = await Promise.all([
     prisma.brand.findMany(),
     prisma.category.findMany(),
-    prisma.gearItem.findMany(),
-    prisma.purchaseRecord.findMany(),
-    prisma.purchaseEvent.findMany(),
+    prisma.gearItem.findMany({ where: { userId } }),
+    prisma.purchaseRecord.findMany({ where: { userId } }),
+    prisma.purchaseEvent.findMany({ where: { userId } }),
     prisma.projectCatalogOverride.findMany(),
-    prisma.wishlistItem.findMany(),
-    prisma.wishlistTransition.findMany()
+    prisma.wishlistItem.findMany({ where: { userId } }),
+    prisma.wishlistTransition.findMany({ where: { wishlistItem: { userId } } })
   ]);
 
   const payload = {
@@ -143,6 +144,7 @@ function mapForeignId(sourceId: string | null | undefined, idMap: Map<string, st
 export async function POST(request: NextRequest) {
   const auth = await requireSession();
   if ("error" in auth) return auth.error;
+  const userId = auth.session.user.id;
 
   try {
     const payload = (await request.json()) as BackupPayload;
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
         const saved = await tx.gearItem.upsert({
           where: { id: gear.id },
           update: {
+            userId,
             name: gear.name,
             brandId: mapForeignId(gear.brandId, brandIdMap),
             categoryId: mapForeignId(gear.categoryId, categoryIdMap),
@@ -203,6 +206,7 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: gear.id,
+            userId,
             name: gear.name,
             brandId: mapForeignId(gear.brandId, brandIdMap),
             categoryId: mapForeignId(gear.categoryId, categoryIdMap),
@@ -220,6 +224,7 @@ export async function POST(request: NextRequest) {
         const saved = await tx.purchaseRecord.upsert({
           where: { id: purchase.id },
           update: {
+            userId,
             gearItemId: mapForeignId(purchase.gearItemId, gearIdMap),
             brandId: mapForeignId(purchase.brandId, brandIdMap),
             categoryId: mapForeignId(purchase.categoryId, categoryIdMap),
@@ -238,6 +243,7 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: purchase.id,
+            userId,
             gearItemId: mapForeignId(purchase.gearItemId, gearIdMap),
             brandId: mapForeignId(purchase.brandId, brandIdMap),
             categoryId: mapForeignId(purchase.categoryId, categoryIdMap),
@@ -262,6 +268,7 @@ export async function POST(request: NextRequest) {
         await tx.purchaseEvent.upsert({
           where: { id: event.id },
           update: {
+            userId,
             purchaseRecordId: mapForeignId(event.purchaseRecordId, purchaseIdMap),
             gearItemId: mapForeignId(event.gearItemId, gearIdMap),
             eventType: event.eventType,
@@ -274,6 +281,7 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: event.id,
+            userId,
             purchaseRecordId: mapForeignId(event.purchaseRecordId, purchaseIdMap),
             gearItemId: mapForeignId(event.gearItemId, gearIdMap),
             eventType: event.eventType,
@@ -325,6 +333,7 @@ export async function POST(request: NextRequest) {
         const saved = await tx.wishlistItem.upsert({
           where: { id: wishlist.id },
           update: {
+            userId,
             name: wishlist.name,
             brandId: mapForeignId(wishlist.brandId, brandIdMap),
             categoryId: mapForeignId(wishlist.categoryId, categoryIdMap),
@@ -342,6 +351,7 @@ export async function POST(request: NextRequest) {
           },
           create: {
             id: wishlist.id,
+            userId,
             name: wishlist.name,
             brandId: mapForeignId(wishlist.brandId, brandIdMap),
             categoryId: mapForeignId(wishlist.categoryId, categoryIdMap),

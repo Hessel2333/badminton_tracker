@@ -11,14 +11,16 @@ import {
   getCachedProjectCatalogEntries,
   getCachedRatingDimensions
 } from "@/lib/server/reference-data";
+import { getCurrentUserId } from "@/lib/server/auth-guard";
 
 const PROJECT_LIBRARY_LIMIT = 240;
 
 export async function getPurchasePageData() {
+  const userId = await getCurrentUserId();
   const [purchases, categories, wishlistItems, projectCatalogEntries] = await Promise.all([
-    getCachedDefaultPurchaseRecords(),
+    getCachedDefaultPurchaseRecords(userId),
     getCachedCategories(),
-    getCachedWishlistRecords(),
+    getCachedWishlistRecords(userId),
     getCachedProjectCatalogEntries()
   ]);
 
@@ -50,8 +52,9 @@ export async function getPurchasePageData() {
 }
 
 export async function getWishlistPageData() {
+  const userId = await getCurrentUserId();
   const [fallbackWishlist, fallbackCategories] = await Promise.all([
-    getCachedWishlistRecords(),
+    getCachedWishlistRecords(userId),
     getCachedCategories()
   ]);
 

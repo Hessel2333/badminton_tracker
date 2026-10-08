@@ -151,9 +151,6 @@ export function GearDetailEditor({
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.22em] text-mute">档案摘要</div>
-                  <div className="mt-2 text-sm leading-7 text-text-mute">
-                    这里不再承担装备信息编辑，只保留你最需要回看的生命周期变化与购买记录。
-                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[11px] uppercase tracking-[0.22em] text-mute">累计投入</div>
@@ -175,7 +172,6 @@ export function GearDetailEditor({
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-xl text-neon">生命周期时间线</h2>
-            <p className="mt-2 text-sm text-text-mute">按时间回看这件装备经历过的购入、消耗、损坏和状态变化。</p>
           </div>
           <span className="rounded-full border border-border bg-panel-2 px-3 py-1 text-xs text-text-mute">
             {initialData.events.length} 条事件
@@ -223,7 +219,6 @@ export function GearDetailEditor({
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-xl text-neon">购买记录</h2>
-            <p className="mt-2 text-sm text-text-mute">保留每次入手的价格、数量、渠道与状态，方便和时间线一起回看。</p>
           </div>
           <Link href="/purchases/ledger" className="text-sm text-accent underline-offset-2 hover:underline">
             前往购买台账

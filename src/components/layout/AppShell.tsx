@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Receipt,
@@ -16,10 +16,7 @@ import {
   Sun
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { mutate } from "swr";
 
-import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -58,6 +55,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     return best;
   }, [pathname]);
 
+  const prefetchNavItem = useCallback((href: string) => {
+    if (!prefetchedRoutes.current.has(href)) {
+      prefetchedRoutes.current.add(href);
+      router.prefetch(href);
+    }
+  }, [router]);
+
   useEffect(() => {
     const nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
     setTheme(nextTheme);
@@ -79,50 +83,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [pathname]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.sessionStorage.getItem("low-freq-prefetch-v1") === "1") return;
-
-    window.sessionStorage.setItem("low-freq-prefetch-v1", "1");
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
-      const urls = [
-        "/api/settings/categories",
-        "/api/settings/brands",
-        "/api/settings/rating-dimensions"
-      ] as const;
-
-      for (const url of urls) {
-        try {
-          await mutate(
-            url,
-            fetchJsonWithPerf(url),
-            {
-              populateCache: true,
-              revalidate: false
-            }
-          );
-        } catch (error) {
-          if ((error as Error).name !== "AbortError") {
-            console.warn(`[perf] low-frequency prefetch failed: ${url}`, error);
-          }
-        }
-      }
-    }, 1200);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
-
-  function prefetchNavItem(href: string) {
-    if (!prefetchedRoutes.current.has(href)) {
-      prefetchedRoutes.current.add(href);
-      router.prefetch(href);
-    }
-  }
-
   function toggleTheme() {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
@@ -142,10 +102,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <aside className="md:sticky md:top-6 md:h-fit transform-gpu">
           <div className="material-blur rounded-[28px] p-2.5 md:rounded-[34px] md:p-3.5">
             <Link href="/dashboard" className="group mb-2 flex items-center gap-3 px-2 py-1.5 md:mb-3 md:gap-3.5 md:px-2.5">
-            <motion.div
-              whileHover={{ scale: 1.04, rotate: -3 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            <div
               className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[15px] border border-white/30 bg-[color:var(--panel-3)] shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-accent to-[var(--accent-dark,#0f766e)]" />
@@ -158,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <path d="M8.5 15L4 4.5M10.25 15L8 3M12 15V3M13.75 15L16 3M15.5 15L20 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <path d="M6 10c2 1 10 1 12 0M6.5 13c1.5 0.8 9.5 0.8 11 0" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
               </svg>
-            </motion.div>
+            </div>
 
             <div className="flex flex-col justify-center -space-y-0.5">
               <span className="font-display text-[1.35rem] font-semibold leading-tight tracking-[-0.045em] text-text">
@@ -189,10 +146,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
                 >
                   {active && (
-                    <motion.div
-                      layoutId="nav-bg"
+                    <div
                       className="absolute inset-0 rounded-[22px] border border-white/35 bg-[color:var(--panel-3)] shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
                   <Icon size={18} className={cn("relative shrink-0 transition-colors", active ? "text-accent" : "text-text-mute group-hover:text-text")} />
@@ -223,18 +178,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="relative min-h-[calc(100vh-4rem)] pt-1 md:pt-2">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={pathname}
-              className="relative z-0"
-              initial={{ opacity: 0.82, y: 2 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0.96, y: -1 }}
-              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div className="relative z-0">{children}</div>
         </main>
       </div>
     </div>

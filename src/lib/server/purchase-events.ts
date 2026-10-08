@@ -3,6 +3,7 @@ import { ItemStatus, Prisma, PurchaseEventType } from "@prisma/client";
 type DbClient = Prisma.TransactionClient;
 
 type CreatePurchaseEventInput = {
+  userId: string;
   purchaseRecordId?: string | null;
   gearItemId?: string | null;
   eventType: PurchaseEventType;
@@ -19,6 +20,7 @@ export async function createPurchaseEvent(
 ) {
   return db.purchaseEvent.create({
     data: {
+      userId: input.userId,
       purchaseRecordId: input.purchaseRecordId ?? null,
       gearItemId: input.gearItemId ?? null,
       eventType: input.eventType,

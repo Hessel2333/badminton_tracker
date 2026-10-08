@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "brandId": "victor",
+  "equipment": [
+    {
+      "id": "f0fb8654-9e3a-5f19-8622-a5f62f3e8eb3",
+      "name": "VICTOR 大铁锤",
+      "model": "TK-HMR",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 799,
+      "imageKey": "victor_racket_thruster_hammer_cutout_01",
+      "popularity": 86,
+      "tags": [
+        "进攻"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "victor",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "b086d8fa-c8a1-5bec-ae26-f8fd3e613c9d",
+      "name": "驭 12",
+      "model": "DX-12",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1080,
+      "imageKey": "victor_racket_drivex12_main_01",
+      "popularity": 78,
+      "tags": [
+        "均衡"
+      ],
+      "revision": 2,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "victor",
+      "nameEn": "DriveX 12",
+      "aliases": [
+        "驭12",
+        "VICTOR DriveX 12"
+      ],
+      "generation": null
+    },
+    {
+      "id": "43d46220-f4ff-5d18-9215-f2df0cc4b3d3",
+      "name": "驭 12 (ZSW J)",
+      "model": "DX-12 ZSW J",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1180,
+      "imageKey": "victor_racket_drivex12zswj_main_01",
+      "popularity": 80,
+      "tags": [
+        "联名",
+        "速度"
+      ],
+      "revision": 2,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "victor",
+      "nameEn": "DriveX 12 (ZSW J)",
+      "aliases": [
+        "驭12 ZSW J",
+        "VICTOR DriveX 12 (ZSW J)"
+      ],
+      "generation": null
+    },
+    {
+      "id": "ae802c7f-9f87-539d-b725-8c6ea01aef72",
+      "name": "VICTOR P9200TTY",
+      "model": "P9200TTY",
+      "series": null,
+      "category": "球鞋",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 639,
+      "imageKey": "victor_shoes_p9200tty_cutout_01",
+      "popularity": 93,
+      "tags": [
+        "稳定",
+        "比赛"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "victor",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    },
+    {
+      "id": "a9738478-0b08-51ea-979d-08b1720fe0ec",
+      "name": "VICTOR P8500NL",
+      "model": "P8500NL",
+      "series": null,
+      "category": "球鞋",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 439,
+      "imageKey": "victor_shoes_p8500nl_cutout_01",
+      "popularity": 86,
+      "tags": [
+        "训练"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "victor",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

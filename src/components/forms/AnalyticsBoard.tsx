@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { EChart } from "@/components/charts/EChart";
 import { Card } from "@/components/ui/Card";
 import { fetchJsonWithPerf } from "@/lib/client/fetch-json-with-perf";
 import { currency } from "@/lib/utils";
@@ -25,6 +24,22 @@ function isAnalyticsRange(value: unknown): value is string {
 
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ControlPanel } from "@/components/ui/ControlPanel";
+
+const EMPTY_WISHLIST_COUNTS: AnalyticsData["wishlistCounts"] = [];
+
+function ChartPlaceholder() {
+  return (
+    <div className="relative h-80 overflow-hidden rounded-2xl bg-panel-2 before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent" />
+  );
+}
+
+const EChart = dynamic(
+  () => import("@/components/charts/EChart").then((mod) => mod.EChart),
+  {
+    ssr: false,
+    loading: ChartPlaceholder
+  }
+);
 
 export function AnalyticsBoard({
   availableYears
@@ -107,7 +122,7 @@ export function AnalyticsBoard({
     () => (fullData?.frequency ?? []).map((item) => ({ bucket: item.bucket, count: Number(item.count) })),
     [fullData]
   );
-  const wishlistCounts = fullData?.wishlistCounts ?? [];
+  const wishlistCounts = fullData?.wishlistCounts ?? EMPTY_WISHLIST_COUNTS;
   const shuttleInsights = fullData?.shuttleInsights;
   const gearRanking = useMemo(
     () =>
@@ -139,7 +154,7 @@ export function AnalyticsBoard({
         hint:
           shuttleInsights?.longestHold.purchaseDate && shuttleInsights?.longestHold.usedUpAt
             ? `${shuttleInsights.longestHold.purchaseDate.slice(0, 10)} → ${shuttleInsights.longestHold.usedUpAt.slice(0, 10)}`
-            : "需要先通过“用完”按钮积累数据"
+            : "暂无周期数据"
       },
       {
         label: "屯最多",
@@ -151,7 +166,7 @@ export function AnalyticsBoard({
         hint:
           shuttleInsights?.largestStock.purchaseDate
             ? `最早库存购入于 ${shuttleInsights.largestStock.purchaseDate.slice(0, 10)}`
-            : "当前在用/闲置库存统计"
+            : "暂无库存数据"
       },
       {
         label: "最爱购买",
@@ -160,7 +175,7 @@ export function AnalyticsBoard({
             ? `${shuttleInsights.favoritePurchase.quantity} 桶`
             : "暂无数据",
         name: shuttleInsights?.favoritePurchase.name ?? null,
-        hint: "按累计购买数量统计"
+        hint: "累计购买数量"
       },
       {
         label: "当前最老库存",
@@ -172,7 +187,7 @@ export function AnalyticsBoard({
         hint:
           shuttleInsights?.oldestCurrentStock.purchaseDate
             ? `购入于 ${shuttleInsights.oldestCurrentStock.purchaseDate.slice(0, 10)}`
-            : "按当前未用完库存统计"
+            : "暂无库存数据"
       }
     ],
     [shuttleInsights]
@@ -359,41 +374,22 @@ export function AnalyticsBoard({
         <Card>
           <h3 className="mb-4 font-display text-lg text-accent">月度投入趋势</h3>
           <p className="-mt-2 mb-4 text-xs uppercase tracking-[0.24em] text-mute">{rangeLabel}</p>
-          <AnimatePresence mode="wait">
-            {loading ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="relative h-80 overflow-hidden rounded-2xl bg-panel-2 before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent"
-              />
-            ) : (
-              <motion.div
-                key="content"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                <EChart option={trendOption} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {loading ? <ChartPlaceholder /> : <EChart option={trendOption} />}
         </Card>
         <Card>
           <h3 className="mb-4 font-display text-lg text-accent">品牌投入占比</h3>
           <p className="-mt-2 mb-4 text-xs uppercase tracking-[0.24em] text-mute">{rangeLabel}</p>
-          {loading ? <div className="relative h-80 overflow-hidden rounded-2xl bg-panel-2 before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent" /> : <EChart option={brandOption} />}
+          {loading ? <ChartPlaceholder /> : <EChart option={brandOption} />}
         </Card>
         <Card>
           <h3 className="mb-4 font-display text-lg text-accent">品类投入对比</h3>
           <p className="-mt-2 mb-4 text-xs uppercase tracking-[0.24em] text-mute">{rangeLabel}</p>
-          {loading ? <div className="relative h-80 overflow-hidden rounded-2xl bg-panel-2 before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent" /> : <EChart option={categoryOption} />}
+          {loading ? <ChartPlaceholder /> : <EChart option={categoryOption} />}
         </Card>
         <Card>
           <h3 className="mb-4 font-display text-lg text-accent">购买频率（月）</h3>
           <p className="-mt-2 mb-4 text-xs uppercase tracking-[0.24em] text-mute">{rangeLabel}</p>
-          {loading ? <div className="relative h-80 overflow-hidden rounded-2xl bg-panel-2 before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent" /> : <EChart option={frequencyOption} />}
+          {loading ? <ChartPlaceholder /> : <EChart option={frequencyOption} />}
         </Card>
       </div>
 

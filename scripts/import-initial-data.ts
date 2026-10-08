@@ -124,9 +124,16 @@ async function pickCoverImageUrl(item: SeedItem): Promise<string | null> {
   });
 }
 
-async function upsertGearItem(item: SeedItem, brandId: string | null, categoryId: string): Promise<string> {
+async function getSeedUserId() {
+  const user = await prisma.user.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } });
+  if (!user) throw new Error("Missing user for initial data import.");
+  return user.id;
+}
+
+async function upsertGearItem(userId: string, item: SeedItem, brandId: string | null, categoryId: string): Promise<string> {
   const existing = await prisma.gearItem.findFirst({
     where: {
+      userId,
       name: item.name,
       brandId,
       categoryId
@@ -148,6 +155,7 @@ async function upsertGearItem(item: SeedItem, brandId: string | null, categoryId
 
   const created = await prisma.gearItem.create({
     data: {
+      userId,
       name: item.name,
       brandId,
       categoryId,
@@ -159,17 +167,19 @@ async function upsertGearItem(item: SeedItem, brandId: string | null, categoryId
   return created.id;
 }
 
-async function resetInitialPurchases() {
+async function resetInitialPurchases(userId: string) {
   await prisma.purchaseRecord.deleteMany({
     where: {
+      userId,
       channel: "初始导入"
     }
   });
 }
 
-async function cleanupStaleImportedGear(validNames: Set<string>) {
+async function cleanupStaleImportedGear(userId: string, validNames: Set<string>) {
   const imported = await prisma.gearItem.findMany({
     where: {
+      userId,
       notes: "首批导入"
     },
     include: {
@@ -187,13 +197,14 @@ async function cleanupStaleImportedGear(validNames: Set<string>) {
   }
 }
 
-async function createInitialPurchase(item: SeedItem) {
+async function createInitialPurchase(userId: string, item: SeedItem) {
   const brandId = await findOrCreateBrandId(item.brandName);
   const categoryId = await findCategoryId(item.categoryName);
-  const gearItemId = await upsertGearItem(item, brandId, categoryId);
+  const gearItemId = await upsertGearItem(userId, item, brandId, categoryId);
 
   await prisma.purchaseRecord.create({
     data: {
+      userId,
       gearItemId,
       brandId,
       categoryId,
@@ -210,13 +221,14 @@ async function createInitialPurchase(item: SeedItem) {
 }
 
 async function main() {
-  await resetInitialPurchases();
+  const userId = await getSeedUserId();
+  await resetInitialPurchases(userId);
 
   for (const item of DATA) {
-    await createInitialPurchase(item);
+    await createInitialPurchase(userId, item);
   }
 
-  await cleanupStaleImportedGear(new Set(DATA.map((item) => item.name)));
+  await cleanupStaleImportedGear(userId, new Set(DATA.map((item) => item.name)));
 
   console.log(`Synced ${DATA.length} initial records.`);
 }

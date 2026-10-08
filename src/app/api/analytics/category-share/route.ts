@@ -16,6 +16,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = await getCategoryShare(parsed.data.range);
+  const data = await getCategoryShare(auth.session.user.id, parsed.data.range);
   return NextResponse.json({ range: parsed.data.range, items: data });
 }

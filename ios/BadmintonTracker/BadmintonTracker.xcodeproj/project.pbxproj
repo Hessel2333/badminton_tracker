@@ -1,0 +1,732 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B20000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* Localizable.xcstrings */; };
+		ABCDEF012345678900000001 /* ConsumptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF012345678900000002 /* ConsumptionSection.swift */; };
+		100000000000000000000101 /* BadmintonTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000201 /* BadmintonTrackerApp.swift */; };
+		100000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* RootView.swift */; };
+		100000000000000000000103 /* AppTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000203 /* AppTab.swift */; };
+		100000000000000000000104 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000204 /* AppSession.swift */; };
+		100000000000000000000106 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000206 /* DomainModels.swift */; };
+		100000000000000000000107 /* AppComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000207 /* AppComponents.swift */; };
+		100000000000000000000109 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000209 /* DashboardView.swift */; };
+		10000000000000000000010A /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000020A /* PurchasesView.swift */; };
+		10000000000000000000010B /* GearView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000020B /* GearView.swift */; };
+		10000000000000000000010C /* WishlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000020C /* WishlistView.swift */; };
+		10000000000000000000010D /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000020D /* AnalyticsView.swift */; };
+		10000000000000000000010E /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000020E /* PreviewData.swift */; };
+		100000000000000000000110 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000210 /* Assets.xcassets */; };
+		100000000000000000000111 /* GearImageResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000211 /* GearImageResolver.swift */; };
+		100000000000000000000112 /* GearImages in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000212 /* GearImages */; };
+		100000000000000000000113 /* LocalDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000213 /* LocalDataStore.swift */; };
+		100000000000000000000114 /* GearPhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000214 /* GearPhotoProcessor.swift */; };
+		A10000000000000000000114 /* ShuttleTubeCutout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000214 /* ShuttleTubeCutout.swift */; };
+		A20000000000000000000114 /* ShuttleTubeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000214 /* ShuttleTubeGeometry.swift */; };
+		A30000000000000000000114 /* RacketAxisGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000214 /* RacketAxisGeometry.swift */; };
+		100000000000000000000115 /* LocalGearCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000215 /* LocalGearCatalog.swift */; };
+		100000000000000000000116 /* EquipmentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000216 /* EquipmentModels.swift */; };
+		100000000000000000000117 /* SwiftDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000217 /* SwiftDataModels.swift */; };
+		100000000000000000000118 /* BadmintonDataContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000218 /* BadmintonDataContainer.swift */; };
+		100000000000000000000119 /* EquipmentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000219 /* EquipmentRepository.swift */; };
+		10000000000000000000011A /* LocalEquipmentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021A /* LocalEquipmentRepository.swift */; };
+		10000000000000000000011B /* CatalogSeedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021B /* CatalogSeedService.swift */; };
+		10000000000000000000011C /* MediaStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021C /* MediaStorage.swift */; };
+		10000000000000000000011D /* LocalMediaStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021D /* LocalMediaStorage.swift */; };
+		10000000000000000000011E /* Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* Seed */; };
+		200000000000000000000101 /* LocalFirstArchitectureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000201 /* LocalFirstArchitectureTests.swift */; };
+		200000000000000000000102 /* Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* Seed */; };
+		200000000000000000000103 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000203 /* XCTest.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		200000000000000000000901 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000501;
+			remoteInfo = BadmintonTracker;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		B20000000000000000000002 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		ABCDEF012345678900000002 /* ConsumptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsumptionSection.swift; sourceTree = "<group>"; };
+		100000000000000000000201 /* BadmintonTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadmintonTrackerApp.swift; sourceTree = "<group>"; };
+		100000000000000000000202 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		100000000000000000000203 /* AppTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTab.swift; sourceTree = "<group>"; };
+		100000000000000000000204 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		100000000000000000000206 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModels.swift; sourceTree = "<group>"; };
+		100000000000000000000207 /* AppComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppComponents.swift; sourceTree = "<group>"; };
+		100000000000000000000209 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		10000000000000000000020A /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
+		10000000000000000000020B /* GearView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearView.swift; sourceTree = "<group>"; };
+		10000000000000000000020C /* WishlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WishlistView.swift; sourceTree = "<group>"; };
+		10000000000000000000020D /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		10000000000000000000020E /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
+		100000000000000000000210 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		100000000000000000000211 /* GearImageResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageResolver.swift; sourceTree = "<group>"; };
+		100000000000000000000212 /* GearImages */ = {isa = PBXFileReference; lastKnownFileType = folder; path = GearImages; sourceTree = "<group>"; };
+		100000000000000000000213 /* LocalDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataStore.swift; sourceTree = "<group>"; };
+		100000000000000000000214 /* GearPhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearPhotoProcessor.swift; sourceTree = "<group>"; };
+		A10000000000000000000214 /* ShuttleTubeCutout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeCutout.swift; sourceTree = "<group>"; };
+		A20000000000000000000214 /* ShuttleTubeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeGeometry.swift; sourceTree = "<group>"; };
+		A30000000000000000000214 /* RacketAxisGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacketAxisGeometry.swift; sourceTree = "<group>"; };
+		100000000000000000000215 /* LocalGearCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalGearCatalog.swift; sourceTree = "<group>"; };
+		100000000000000000000216 /* EquipmentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentModels.swift; sourceTree = "<group>"; };
+		100000000000000000000217 /* SwiftDataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataModels.swift; sourceTree = "<group>"; };
+		100000000000000000000218 /* BadmintonDataContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadmintonDataContainer.swift; sourceTree = "<group>"; };
+		100000000000000000000219 /* EquipmentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentRepository.swift; sourceTree = "<group>"; };
+		10000000000000000000021A /* LocalEquipmentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalEquipmentRepository.swift; sourceTree = "<group>"; };
+		10000000000000000000021B /* CatalogSeedService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogSeedService.swift; sourceTree = "<group>"; };
+		10000000000000000000021C /* MediaStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaStorage.swift; sourceTree = "<group>"; };
+		10000000000000000000021D /* LocalMediaStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMediaStorage.swift; sourceTree = "<group>"; };
+		10000000000000000000021E /* Seed */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BadmintonTracker/Resources/Seed; sourceTree = SOURCE_ROOT; };
+		200000000000000000000201 /* LocalFirstArchitectureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFirstArchitectureTests.swift; sourceTree = "<group>"; };
+		200000000000000000000202 /* BadmintonTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BadmintonTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000203 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		1000000000000000000002FF /* BadmintonTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BadmintonTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		100000000000000000000301 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		200000000000000000000301 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000103 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100000000000000000000401 = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000402 /* BadmintonTracker */,
+				200000000000000000000402 /* BadmintonTrackerTests */,
+				100000000000000000000403 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		100000000000000000000402 /* BadmintonTracker */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000210 /* Assets.xcassets */,
+				100000000000000000000404 /* App */,
+				100000000000000000000405 /* Services */,
+				100000000000000000000406 /* Models */,
+				100000000000000000000411 /* Persistence */,
+				100000000000000000000412 /* Repository */,
+				100000000000000000000413 /* Seed */,
+				100000000000000000000414 /* Storage */,
+				100000000000000000000407 /* UI */,
+				100000000000000000000408 /* Features */,
+				100000000000000000000410 /* Resources */,
+				100000000000000000000409 /* Support */,
+			);
+			path = BadmintonTracker;
+			sourceTree = "<group>";
+		};
+		100000000000000000000403 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1000000000000000000002FF /* BadmintonTracker.app */,
+				200000000000000000000202 /* BadmintonTrackerTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		100000000000000000000404 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000201 /* BadmintonTrackerApp.swift */,
+				100000000000000000000202 /* RootView.swift */,
+				100000000000000000000203 /* AppTab.swift */,
+				100000000000000000000204 /* AppSession.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		100000000000000000000405 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000211 /* GearImageResolver.swift */,
+				100000000000000000000214 /* GearPhotoProcessor.swift */,
+				A10000000000000000000214 /* ShuttleTubeCutout.swift */,
+				A20000000000000000000214 /* ShuttleTubeGeometry.swift */,
+				A30000000000000000000214 /* RacketAxisGeometry.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		100000000000000000000406 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000206 /* DomainModels.swift */,
+				100000000000000000000215 /* LocalGearCatalog.swift */,
+				100000000000000000000216 /* EquipmentModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		100000000000000000000407 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000207 /* AppComponents.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		100000000000000000000408 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000040B /* Dashboard */,
+				10000000000000000000040C /* Purchases */,
+				10000000000000000000040D /* Gear */,
+				10000000000000000000040E /* Wishlist */,
+				10000000000000000000040F /* Analytics */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		100000000000000000000409 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000020E /* PreviewData.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		10000000000000000000040B /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000209 /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		10000000000000000000040C /* Purchases */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000020A /* PurchasesView.swift */,
+			);
+			path = Purchases;
+			sourceTree = "<group>";
+		};
+		10000000000000000000040D /* Gear */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000020B /* GearView.swift */,
+				ABCDEF012345678900000002 /* ConsumptionSection.swift */,
+			);
+			path = Gear;
+			sourceTree = "<group>";
+		};
+		10000000000000000000040E /* Wishlist */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000020C /* WishlistView.swift */,
+			);
+			path = Wishlist;
+			sourceTree = "<group>";
+		};
+		10000000000000000000040F /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000020D /* AnalyticsView.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
+		100000000000000000000410 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+                B20000000000000000000002 /* Localizable.xcstrings */,
+				100000000000000000000212 /* GearImages */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		100000000000000000000411 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000213 /* LocalDataStore.swift */,
+				100000000000000000000217 /* SwiftDataModels.swift */,
+				100000000000000000000218 /* BadmintonDataContainer.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		100000000000000000000412 /* Repository */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000219 /* EquipmentRepository.swift */,
+				10000000000000000000021A /* LocalEquipmentRepository.swift */,
+			);
+			path = Repository;
+			sourceTree = "<group>";
+		};
+		100000000000000000000413 /* Seed */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000021B /* CatalogSeedService.swift */,
+			);
+			path = Seed;
+			sourceTree = "<group>";
+		};
+		100000000000000000000414 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000021C /* MediaStorage.swift */,
+				10000000000000000000021D /* LocalMediaStorage.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		200000000000000000000402 /* BadmintonTrackerTests */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000201 /* LocalFirstArchitectureTests.swift */,
+			);
+			path = BadmintonTrackerTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		100000000000000000000501 /* BadmintonTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000701 /* Build configuration list for PBXNativeTarget "BadmintonTracker" */;
+			buildPhases = (
+				100000000000000000000601 /* Sources */,
+				100000000000000000000301 /* Frameworks */,
+				100000000000000000000602 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BadmintonTracker;
+			productName = BadmintonTracker;
+			productReference = 1000000000000000000002FF /* BadmintonTracker.app */;
+			productType = "com.apple.product-type.application";
+		};
+		200000000000000000000502 /* BadmintonTrackerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 200000000000000000000702 /* Build configuration list for PBXNativeTarget "BadmintonTrackerTests" */;
+			buildPhases = (
+				200000000000000000000604 /* Sources */,
+				200000000000000000000301 /* Frameworks */,
+				200000000000000000000603 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				200000000000000000000902 /* PBXTargetDependency */,
+			);
+			name = BadmintonTrackerTests;
+			productName = BadmintonTrackerTests;
+			productReference = 200000000000000000000202 /* BadmintonTrackerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		100000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					100000000000000000000501 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					200000000000000000000502 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 100000000000000000000501;
+					};
+				};
+			};
+			buildConfigurationList = 100000000000000000000700 /* Build configuration list for PBXProject "BadmintonTracker" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+                "zh-Hans",
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = 100000000000000000000401;
+			productRefGroup = 100000000000000000000403 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				100000000000000000000501 /* BadmintonTracker */,
+				200000000000000000000502 /* BadmintonTrackerTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		100000000000000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+                B20000000000000000000001 /* Localizable.xcstrings in Resources */,
+				100000000000000000000110 /* Assets.xcassets in Resources */,
+				100000000000000000000112 /* GearImages in Resources */,
+				10000000000000000000011E /* Seed in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		200000000000000000000603 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000102 /* Seed in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		100000000000000000000601 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000101 /* BadmintonTrackerApp.swift in Sources */,
+				100000000000000000000102 /* RootView.swift in Sources */,
+				100000000000000000000103 /* AppTab.swift in Sources */,
+				100000000000000000000104 /* AppSession.swift in Sources */,
+				100000000000000000000106 /* DomainModels.swift in Sources */,
+				100000000000000000000107 /* AppComponents.swift in Sources */,
+				100000000000000000000109 /* DashboardView.swift in Sources */,
+				10000000000000000000010A /* PurchasesView.swift in Sources */,
+				10000000000000000000010B /* GearView.swift in Sources */,
+				ABCDEF012345678900000001 /* ConsumptionSection.swift in Sources */,
+				10000000000000000000010C /* WishlistView.swift in Sources */,
+				10000000000000000000010D /* AnalyticsView.swift in Sources */,
+				10000000000000000000010E /* PreviewData.swift in Sources */,
+				100000000000000000000111 /* GearImageResolver.swift in Sources */,
+				100000000000000000000113 /* LocalDataStore.swift in Sources */,
+				100000000000000000000114 /* GearPhotoProcessor.swift in Sources */,
+				A10000000000000000000114 /* ShuttleTubeCutout.swift in Sources */,
+				A20000000000000000000114 /* ShuttleTubeGeometry.swift in Sources */,
+				A30000000000000000000114 /* RacketAxisGeometry.swift in Sources */,
+				100000000000000000000115 /* LocalGearCatalog.swift in Sources */,
+				100000000000000000000116 /* EquipmentModels.swift in Sources */,
+				100000000000000000000117 /* SwiftDataModels.swift in Sources */,
+				100000000000000000000118 /* BadmintonDataContainer.swift in Sources */,
+				100000000000000000000119 /* EquipmentRepository.swift in Sources */,
+				10000000000000000000011A /* LocalEquipmentRepository.swift in Sources */,
+				10000000000000000000011B /* CatalogSeedService.swift in Sources */,
+				10000000000000000000011C /* MediaStorage.swift in Sources */,
+				10000000000000000000011D /* LocalMediaStorage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		200000000000000000000604 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000101 /* LocalFirstArchitectureTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		200000000000000000000902 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000501 /* BadmintonTracker */;
+			targetProxy = 200000000000000000000901 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		100000000000000000000801 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		100000000000000000000802 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		100000000000000000000803 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = (
+					AppIconGreen,
+					AppIconVictorBlue,
+					AppIconRed,
+					AppIconSilver,
+					AppIconOrange,
+					AppIconPurple,
+					AppIconAqua,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "羽痕";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		100000000000000000000804 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = (
+					AppIconGreen,
+					AppIconVictorBlue,
+					AppIconRed,
+					AppIconSilver,
+					AppIconOrange,
+					AppIconPurple,
+					AppIconAqua,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "羽痕";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTracker;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		200000000000000000000805 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTrackerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BadmintonTracker.app/BadmintonTracker";
+			};
+			name = Debug;
+		};
+		200000000000000000000806 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTrackerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BadmintonTracker.app/BadmintonTracker";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		100000000000000000000700 /* Build configuration list for PBXProject "BadmintonTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000801 /* Debug */,
+				100000000000000000000802 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000701 /* Build configuration list for PBXNativeTarget "BadmintonTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000803 /* Debug */,
+				100000000000000000000804 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		200000000000000000000702 /* Build configuration list for PBXNativeTarget "BadmintonTrackerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				200000000000000000000805 /* Debug */,
+				200000000000000000000806 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 100000000000000000000001 /* Project object */;
+}

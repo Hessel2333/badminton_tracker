@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "brandId": "bonny",
+  "equipment": [
+    {
+      "id": "959975d8-9e53-51c4-98e0-30376305c07e",
+      "name": "Bonny FT152",
+      "model": "FT152",
+      "series": null,
+      "category": "球拍",
+      "variant": null,
+      "weightClass": null,
+      "gripSize": null,
+      "color": null,
+      "releaseYear": null,
+      "suggestedUnitPriceCny": 1380,
+      "imageKey": "bonny_racket_ft152_main_01",
+      "popularity": 75,
+      "tags": [
+        "碳素",
+        "进攻"
+      ],
+      "revision": 1,
+      "isActive": true,
+      "createdAt": "2026-08-14T00:00:00Z",
+      "updatedAt": "2026-08-14T00:00:00Z",
+      "brandId": "bonny",
+      "nameEn": null,
+      "aliases": [],
+      "generation": null
+    }
+  ]
+}

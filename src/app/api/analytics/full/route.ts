@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const range = parsed.data.range;
-  const payload = await metrics.track("data", () => getCachedAnalyticsFullData(range));
+  const payload = await metrics.track("data", () => getCachedAnalyticsFullData(auth.session.user.id, range));
   metrics.log({ range });
 
   // 该接口是“用户私有分析数据”，使用浏览器侧 private cache 抵抗网络抖动：

@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -339,20 +338,11 @@ export function SettingsManager({
         />
       </ControlPanel>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15 }}
-          className="space-y-6"
-        >
+      <div key={activeTab} className="space-y-6">
           {activeTab === "catalog" && (
             <div className="space-y-6">
               <Card entryAnimation={false}>
                 <h2 className="font-display text-xl text-neon">专属项目装备库</h2>
-                <p className="mt-1 text-sm text-mute">维护项目库的参考价、品牌、型号、品类、图片与标签，保存后会立即反映到首屏的新增购买页。</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-[1fr_180px]">
                   <Input
                     value={catalogQuery}
@@ -473,10 +463,10 @@ export function SettingsManager({
 
                     <div className="mt-5 flex flex-wrap gap-2">
                       <Button type="button" onClick={saveProjectCatalog} disabled={catalogSaving}>
-                        {catalogSaving ? "配置保存中..." : "保存项目装备更改"}
+                        {catalogSaving ? "保存中..." : "保存"}
                       </Button>
                       <Button type="button" variant="secondary" onClick={closeCatalogEditor} disabled={catalogSaving}>
-                        取消操作
+                        取消
                       </Button>
                     </div>
                   </Card>
@@ -488,7 +478,7 @@ export function SettingsManager({
           {activeTab === "taxonomy" && (
             <div className="space-y-6">
               <Card entryAnimation={false}>
-                <h2 className="font-display text-xl text-neon">品类管理字典</h2>
+                <h2 className="font-display text-xl text-neon">品类</h2>
                 <div className="mt-4 grid gap-3 md:grid-cols-[1fr_140px_auto]">
                   <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="新大类名称" />
                   <Input
@@ -499,7 +489,7 @@ export function SettingsManager({
                     placeholder="排序权重"
                   />
                   <Button type="button" onClick={addCategory} disabled={addingCategory || !name}>
-                    {addingCategory ? "录入中..." : "录入新品类"}
+                    {addingCategory ? "保存中..." : "新增品类"}
                   </Button>
                 </div>
 
@@ -507,9 +497,9 @@ export function SettingsManager({
                   <Table className="min-w-[500px]">
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>名称空间</TableHead>
+                        <TableHead>名称</TableHead>
                         <TableHead>系统内置</TableHead>
-                        <TableHead>渲染排序码</TableHead>
+                        <TableHead>排序</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -528,16 +518,13 @@ export function SettingsManager({
               </Card>
 
               <Card entryAnimation={false}>
-                <h2 className="font-display text-xl text-neon">品牌别名散列映射</h2>
-                <p className="mt-1 text-sm text-mute">
-                  后台数据统计时按 Normalized Name 聚合清洗，避免前端同品牌不同口径（如尤尼克斯 vs YY）导致统计集分裂。
-                </p>
+                <h2 className="font-display text-xl text-neon">品牌别名</h2>
                 <div className="mt-5">
                   <Table className="min-w-[500px]">
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>前端显示名 (Raw Input)</TableHead>
-                        <TableHead>计算主键 (Normalized Key)</TableHead>
+                        <TableHead>显示名</TableHead>
+                        <TableHead>归一化名</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -550,7 +537,7 @@ export function SettingsManager({
                       {!brands.length ? (
                         <TableRow>
                           <TableCell colSpan={2} className="py-8 text-center text-mute">
-                            暂无品牌词典数据积淀
+                            暂无品牌数据
                           </TableCell>
                         </TableRow>
                       ) : null}
@@ -564,8 +551,7 @@ export function SettingsManager({
           {activeTab === "advanced" && (
             <div className="space-y-6">
               <Card entryAnimation={false}>
-                <h2 className="font-display text-xl text-neon">全域质感色彩偏好</h2>
-                <p className="mt-1 text-sm text-mute">选择最符合你操作直觉的强调色变体，点击即刻无缝沉浸。</p>
+                <h2 className="font-display text-xl text-neon">强调色</h2>
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {COLORS.map((c) => (
                     <button
@@ -585,7 +571,7 @@ export function SettingsManager({
                         {c.name}
                       </span>
                       {accentColor === c.id && (
-                        <motion.div layoutId="color-active-ring" className="absolute inset-[-1px] rounded-[16px] border-[1.5px] border-accent pointer-events-none" transition={{ type: "spring", stiffness: 450, damping: 25 }} />
+                        <div className="absolute inset-[-1px] rounded-[16px] border-[1.5px] border-accent pointer-events-none" />
                       )}
                     </button>
                   ))}
@@ -595,17 +581,16 @@ export function SettingsManager({
               <Card entryAnimation={false}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-display text-xl text-neon">装备加权评分引擎</h2>
-                    <p className="mt-1 text-sm text-mute">分配或调整各项主观雷达图维度的乘数权重，以干预最终 Total Score 的评判偏好。</p>
+                    <h2 className="font-display text-xl text-neon">评分权重</h2>
                   </div>
                 </div>
                 <div className="mt-5">
                   <Table className="min-w-[560px]">
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>特征 Key</TableHead>
-                        <TableHead>前端渲染名</TableHead>
-                        <TableHead>权重倍率</TableHead>
+                        <TableHead>Key</TableHead>
+                        <TableHead>名称</TableHead>
+                        <TableHead>权重</TableHead>
                         <TableHead className="text-center">状态</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -666,20 +651,19 @@ export function SettingsManager({
                 </div>
                 <div className="mt-4 flex">
                   <Button type="button" onClick={saveDimensions} disabled={savingDimensions}>
-                    {savingDimensions ? "重写引擎字典中..." : "保存雷达权重"}
+                    {savingDimensions ? "保存中..." : "保存权重"}
                   </Button>
                 </div>
               </Card>
 
               <Card entryAnimation={false}>
-                <h2 className="font-display text-xl text-neon text-danger">系统核心安全快照</h2>
-                <p className="mt-1 text-sm text-mute">将 PostgreSQL 存储的主数据热导出为 JSON，或覆写灾备。</p>
+                <h2 className="font-display text-xl text-neon text-danger">数据备份</h2>
                 <div className="mt-5 flex flex-wrap gap-3 p-4 bg-danger/5 border border-danger/20 rounded-2xl">
                   <Button type="button" variant="secondary" className="hover:bg-panel-2 border-border" onClick={exportBackup} disabled={exportingBackup}>
-                    {exportingBackup ? "正在封装快照包..." : "下传离线 JSON 镜像"}
+                    {exportingBackup ? "导出中..." : "导出 JSON"}
                   </Button>
                   <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-danger/40 bg-danger/10 px-5 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger hover:text-white shadow-sm">
-                    {importingBackup ? "载入源文件中..." : "危险性灾备覆写"}
+                    {importingBackup ? "导入中..." : "导入 JSON"}
                     <input
                       type="file"
                       accept="application/json,.json"
@@ -687,7 +671,7 @@ export function SettingsManager({
                       onChange={(event) => {
                         const file = event.target.files?.[0];
                         if (file) {
-                          if (confirm("🚨严重警告：此操作不可挽回！旧版数据库将被强制丢弃替换，请问是否继续挂载新镜像？")) {
+                          if (confirm("导入会覆盖当前数据，是否继续？")) {
                             void importBackup(file);
                           }
                         }
@@ -700,8 +684,7 @@ export function SettingsManager({
               </Card>
             </div>
           )}
-        </motion.div>
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
