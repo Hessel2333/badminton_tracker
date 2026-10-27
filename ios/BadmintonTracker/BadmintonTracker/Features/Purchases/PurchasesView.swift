@@ -264,11 +264,7 @@ private struct GearCatalogCompactCard: View {
     }
     .padding(10)
     .frame(width: 124, alignment: .leading)
-    .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .strokeBorder(.quaternary, lineWidth: 1)
-    )
+    .appSurface(.compact)
   }
 }
 
@@ -325,11 +321,7 @@ private struct GearCatalogCard: View {
       }
     }
     .padding(12)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .strokeBorder(.quaternary, lineWidth: 1)
-    )
+    .appSurface()
   }
 }
 
@@ -409,7 +401,6 @@ struct PurchaseRow: View {
       .foregroundStyle(.secondary)
     }
     .padding(14)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
   }
 }
 
@@ -427,7 +418,6 @@ private struct PurchaseGridCard: View {
         categoryName: purchase.category?.name
       )
       .aspectRatio(1, contentMode: .fit)
-      .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
       Text(purchase.displayName)
         .font(.headline)
@@ -459,25 +449,19 @@ private struct PurchaseGridCard: View {
       }
     }
     .padding(12)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .stroke(.quaternary, lineWidth: 1)
-    )
+    .appSurface()
   }
 }
 
 struct AddPurchaseView: View {
   @Environment(AppSession.self) private var session
-  @Environment(\.dismiss) private var dismiss
+  @Environment(\.appReduceMotion) private var reduceMotion
   private let initialCatalogEntry: LocalGearCatalogEntry?
   private let initialWishlistItem: WishlistItem?
+  private let initialPurchase: PurchaseRecord?
 
   @State private var availableDraft: [String]?
-  @State private var restoredCategory: PurchaseCategoryChoice?
-  @State private var restoringBrandChoice = false
-  @State private var restoringModelChoice = false
-  private var draftKey: String { initialWishlistItem.map { "wish." + $0.id } ?? initialCatalogEntry.map { "catalog." + $0.id } ?? "custom" }
+  private var draftKey: String { initialPurchase.map { "repeat." + $0.id } ?? initialWishlistItem.map { "wish." + $0.id } ?? initialCatalogEntry.map { "catalog." + $0.id } ?? "custom" }
   @State private var itemName = ""
   @State private var brandName = ""
   @State private var modelCode = ""
@@ -495,6 +479,7 @@ struct AddPurchaseView: View {
   @State private var selectedPhotoImage: UIImage?
   @State private var selectedPhotoURLString: String?
   @State private var isProcessingPhoto = false
+  @State private var photoRequestID: UUID?
   @State private var photoMessage: String?
   @State private var didApplyInitialData = false
   @State private var showsEquipmentDetails = false
@@ -509,25 +494,51 @@ struct AddPurchaseView: View {
   @State private var shoesSize = ""
   @State private var shoesSizeSystem = "EU"
   @State private var shoesColorway = ""
+  @State private var completedPurchase: PurchaseSuccess?
 
   init(
     initialCatalogEntry: LocalGearCatalogEntry? = nil,
-    initialWishlistItem: WishlistItem? = nil
+    initialWishlistItem: WishlistItem? = nil,
+    initialPurchase: PurchaseRecord? = nil
   ) {
     self.initialCatalogEntry = initialCatalogEntry
     self.initialWishlistItem = initialWishlistItem
+    self.initialPurchase = initialPurchase
   }
 
   var body: some View {
+    NavigationStack {
+      Group {
+        if let completedPurchase {
+          PurchaseSuccessView(success: completedPurchase)
+            .transition(.opacity)
+        } else {
+          purchaseForm
+            .transition(.opacity)
+        }
+      }
+      .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: completedPurchase != nil)
+    }
+  }
+
+  private var purchaseForm: some View {
     let photoButtonTitle = selectedPhotoImage == nil ? "选择装备照片" : "更换装备照片"
 
-    NavigationStack {
-      Form {
+    return Form {
         if let availableDraft {
           Section {
             Button("继续上次未完成的记录") { restoreDraft(availableDraft); self.availableDraft = nil }
             Button("删除草稿", role: .destructive) { PurchaseDraftStore.remove(key: draftKey); self.availableDraft = nil }
+              .foregroundStyle(SemanticTint.destructive)
           } footer: { Text("草稿仅保存在这台设备上，保存后才会计入购买记录。") }
+        }
+        if let initialPurchase {
+          Section("再次入手") {
+            Label(GearDisplayName.resolve(name: initialPurchase.itemNameSnapshot,
+              brand: initialPurchase.brand?.name, model: initialPurchase.gearItem?.modelCode,
+              category: initialPurchase.category?.name, imageKey: initialPurchase.gearItem?.imageKey),
+              systemImage: "arrow.clockwise")
+          }
         }
         if let selectedCatalogEntry {
           Section("装备库") {
@@ -535,18 +546,18 @@ struct AddPurchaseView: View {
           }
         }
 
-        if selectedCatalogEntry != nil {
+        if selectedCatalogEntry != nil || initialPurchase != nil {
           purchaseSection
           Section {
             Toggle("编辑装备资料与规格", isOn: $showsEquipmentDetails)
           }
         }
 
-        if selectedCatalogEntry == nil || showsEquipmentDetails {
+        if (selectedCatalogEntry == nil && initialPurchase == nil) || showsEquipmentDetails {
         Section("装备") {
           TextField("名称", text: $itemName)
 
-          Picker("品牌", selection: $brandChoice) {
+          Picker("品牌", selection: Binding(get: { brandChoice }, set: applyBrandChoice)) {
             ForEach(brandOptions, id: \.self) { option in
               Text(option).tag(option)
             }
@@ -558,7 +569,7 @@ struct AddPurchaseView: View {
           }
 
           if !modelOptions.isEmpty {
-            Picker("型号", selection: $modelChoice) {
+            Picker("型号", selection: Binding(get: { modelChoice }, set: applyModelChoice)) {
               ForEach(modelOptions) { entry in
                 Text(entry.modelCode ?? entry.name).tag(entry.id)
               }
@@ -585,25 +596,19 @@ struct AddPurchaseView: View {
         profileSection
 
         }
-        if selectedCatalogEntry == nil { purchaseSection }
+        if selectedCatalogEntry == nil && initialPurchase == nil { purchaseSection }
 
         Section("照片") {
           PhotosPicker(selection: $selectedPhoto, matching: .images) {
             Label(photoButtonTitle, systemImage: "photo")
           }
+          .disabled(isProcessingPhoto)
 
           if let selectedPhotoImage {
-            Image(uiImage: selectedPhotoImage)
-              .resizable()
-              .scaledToFit()
-              .frame(maxWidth: .infinity, minHeight: 160, maxHeight: 220)
-              .padding(.vertical, 6)
+            GearPhotoPreview(image: selectedPhotoImage, reference: selectedPhotoURLString, isProcessing: isProcessingPhoto)
           }
 
-          if isProcessingPhoto {
-            Label("正在处理照片", systemImage: "wand.and.stars")
-              .foregroundStyle(.secondary)
-          } else if let photoMessage {
+          if !isProcessingPhoto, let photoMessage {
             Text(photoMessage)
               .font(.footnote)
               .foregroundStyle(.secondary)
@@ -617,47 +622,32 @@ struct AddPurchaseView: View {
             .lineLimit(3...5)
         }
       }
-      .navigationTitle(initialWishlistItem == nil ? "记录购买" : "入手心愿")
+      .navigationTitle(initialPurchase != nil ? "再买一次" : initialWishlistItem == nil ? "记录购买" : "入手心愿")
       .navigationBarTitleDisplayMode(.inline)
       .onAppear {
         guard !didApplyInitialData else { return }
         availableDraft = PurchaseDraftStore.load(key: draftKey)
         didApplyInitialData = true
-        if let initialWishlistItem {
+        if let initialPurchase {
+          applyRepeatPurchase(initialPurchase)
+        } else if let initialWishlistItem {
           applyWishlistItem(initialWishlistItem)
         } else if let initialCatalogEntry {
           applyCatalogEntry(initialCatalogEntry)
         }
       }
-      .onChange(of: selectedPhoto) { _, item in
-        Task { await handlePhotoSelection(item) }
-      }
-      .onChange(of: brandChoice) { _, value in
-        if restoringBrandChoice { restoringBrandChoice = false; return }
-        applyBrandChoice(value)
-      }
-      .onChange(of: modelChoice) { _, value in
-        if restoringModelChoice { restoringModelChoice = false; return }
-        applyModelChoice(value)
-      }
-      .onChange(of: category) { _, _ in
-        if restoredCategory == category { restoredCategory = nil; return }
-        refreshChoicesForCurrentCategory()
-      }
+      .task(id: selectedPhoto) { await handlePhotoSelection(selectedPhoto) }
+      .onChange(of: brandName) { _, _ in refreshModelChoice() }
+      .onChange(of: category) { _, _ in refreshModelChoice() }
       .editorActions(title: initialWishlistItem == nil ? "保存" : "确认入手",
         isValid: !itemName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && validPrice && (1...9999).contains(quantity),
-        isBusy: isProcessingPhoto, draft: editorDraft, ready: didApplyInitialData, draftKey: draftKey, save: save)
-    }
+        isBusy: isProcessingPhoto, draft: editorDraft, ready: didApplyInitialData, draftKey: draftKey,
+        onSaved: showSuccess, save: save)
   }
 
   private func restoreDraft(_ values: [String]) {
     guard values.count == 22 else { return }
-    if let restored = PurchaseCategoryChoice(rawValue: values[7]), restored != category {
-      restoredCategory = restored; category = restored
-    }
-    restoringBrandChoice = brandChoice != PurchaseInputChoice.custom
-    restoringModelChoice = modelChoice != PurchaseInputChoice.custom
-    brandChoice = PurchaseInputChoice.custom; modelChoice = PurchaseInputChoice.custom
+    if let restored = PurchaseCategoryChoice(rawValue: values[7]) { category = restored }
     itemName = values[0]; brandName = values[1]; modelCode = values[2]; price = values[3]
     quantity = Int(values[4]) ?? 1; channel = values[5]; notes = values[6]
     status = ItemStatus(rawValue: values[8]) ?? .inUse
@@ -669,6 +659,7 @@ struct AddPurchaseView: View {
     racketCrossTension = values[17]
     racketStringingDate = Date(timeIntervalSince1970: Double(values[18]) ?? Date().timeIntervalSince1970)
     shoesSize = values[19]; shoesSizeSystem = values[20]; shoesColorway = values[21]
+    restoreEquipmentChoices()
   }
 
   private var validPrice: Bool {
@@ -699,6 +690,8 @@ struct AddPurchaseView: View {
     } footer: {
       if !price.isEmpty && !validPrice {
         Text("请输入不小于 0 的有效金额。").foregroundStyle(.red)
+      } else if initialPurchase != nil {
+        Text("已带入上次单价，请按本次实付金额确认。")
       } else if selectedCatalogEntry != nil {
         Text("已预填参考单价，请按实际支付金额修改。")
       }
@@ -708,41 +701,46 @@ struct AddPurchaseView: View {
   @MainActor
   private func handlePhotoSelection(_ item: PhotosPickerItem?) async {
     guard let item else { return }
+    let requestID = UUID()
+    photoRequestID = requestID
+    let previousImage = selectedPhotoImage
+    let previousReference = selectedPhotoURLString
     isProcessingPhoto = true
     photoMessage = nil
-    defer { isProcessingPhoto = false }
-
+    defer { if photoRequestID == requestID { isProcessingPhoto = false } }
     do {
       guard let data = try await item.loadTransferable(type: Data.self),
-            let image = UIImage(data: data) else {
-        photoMessage = "照片暂时无法读取。"
+            let image = UIImage(data: data) else { throw CocoaError(.fileReadCorruptFile) }
+      try Task.checkCancellation()
+      guard photoRequestID == requestID else { return }
+      selectedPhotoImage = image
+      selectedPhotoURLString = nil
+      let result = try await GearPhotoProcessor.processImportedImage(image, categoryName: category.title)
+      guard !Task.isCancelled, photoRequestID == requestID else {
+        try? GearPhotoProcessor.deleteMedia(id: result.mediaID)
         return
       }
-      selectedPhotoImage = image
-      let result = try await GearPhotoProcessor.processImportedImage(image, categoryName: category.title)
       selectedPhotoURLString = result.displayReference
-
-      if result.cutoutURL == nil {
-        photoMessage = "已保存原图，未识别到清晰主体。"
-      } else {
-        selectedPhotoImage = UIImage(contentsOfFile: result.displayURL.path) ?? image
-        photoMessage = "已完成本地抠图。"
-      }
+      selectedPhotoImage = UIImage(contentsOfFile: result.displayURL.path) ?? image
+      if result.cutoutURL == nil { photoMessage = "未识别到清晰主体，已保留原图。" }
     } catch {
-      photoMessage = error.localizedDescription
+      guard !Task.isCancelled, photoRequestID == requestID else { return }
+      selectedPhotoImage = previousImage
+      selectedPhotoURLString = previousReference
+      photoMessage = "照片处理失败，请重新选择。"
     }
   }
 
-  private func save() async -> Bool {
+  private var purchaseInput: PurchaseInput {
     let unitPrice = Double(price) ?? 0
-    let input = PurchaseInput(
-      catalogEquipmentID: selectedCatalogEntry?.catalogEquipmentID,
+    return PurchaseInput(
+      catalogEquipmentID: selectedCatalogEntry?.catalogEquipmentID ?? (repeatsSameGear ? initialPurchase?.gearItem?.catalogEquipmentID : nil),
       brandName: LocalBrandNormalizer.canonicalName(brandName),
       modelCode: modelCode.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
       categoryId: category.rawValue,
       categoryName: category.title,
       gearCoverImageUrl: selectedPhotoURLString,
-      gearImageKey: selectedCatalogEntry?.imageKey,
+      gearImageKey: selectedCatalogEntry?.imageKey ?? (repeatsSameGear ? initialPurchase?.gearItem?.imageKey : nil),
       profileDetails: profileDetailsForCurrentCategory(),
       itemNameSnapshot: itemName.trimmingCharacters(in: .whitespacesAndNewlines),
       unitPriceCny: unitPrice,
@@ -754,11 +752,38 @@ struct AddPurchaseView: View {
       notes: notes.isEmpty ? nil : notes,
       receiptImageUrl: nil
     )
+  }
+
+  private var repeatsSameGear: Bool {
+    guard let initialPurchase else { return false }
+    return LocalGearIdentity.id(name: itemName, brandName: brandName, modelCode: modelCode, categoryName: category.title)
+      == LocalGearIdentity.id(for: initialPurchase)
+  }
+
+  private func save() async -> Bool {
     if let initialWishlistItem {
-      return await session.purchaseWishlistItem(id: initialWishlistItem.id, purchaseInput: input)
+      return await session.purchaseWishlistItem(id: initialWishlistItem.id, purchaseInput: purchaseInput)
     } else {
-      return await session.createPurchase(input)
+      return await session.createPurchase(purchaseInput)
     }
+  }
+
+  private func showSuccess() {
+    let input = purchaseInput
+    let identity = LocalGearIdentity.id(name: input.itemNameSnapshot, brandName: input.brandName,
+      modelCode: input.modelCode, categoryName: input.categoryName, entries: session.catalogEntries)
+    let matchingPurchases = session.purchases.filter { purchase in
+      if let catalogEquipmentID = input.catalogEquipmentID {
+        return purchase.gearItem?.catalogEquipmentID == catalogEquipmentID
+      }
+      return LocalGearIdentity.id(for: purchase, entries: session.catalogEntries) == identity
+    }
+    let kind: PurchaseSuccess.Kind
+    if initialWishlistItem != nil { kind = .wishlist }
+    else if session.purchases.count == 1 { kind = .firstGear }
+    else if matchingPurchases.count > 1 { kind = .repeatPurchase }
+    else { kind = .newGear }
+    completedPurchase = PurchaseSuccess(purchase: input, kind: kind)
   }
 
   private var recentCatalogEntries: [LocalGearCatalogEntry] {
@@ -786,7 +811,7 @@ struct AddPurchaseView: View {
   }
 
   private var brandOptions: [String] {
-    LocalGearCatalog.brandOptions(categoryName: category.title, entries: session.catalogEntries)
+    LocalGearCatalog.brandOptions(categoryName: nil, entries: session.catalogEntries)
   }
 
   private var modelOptions: [LocalGearCatalogEntry] {
@@ -798,32 +823,42 @@ struct AddPurchaseView: View {
   }
 
   private func applyBrandChoice(_ value: String) {
-    guard value != PurchaseInputChoice.custom else { return }
-    brandName = value
-
-    if modelChoice != PurchaseInputChoice.custom,
-       !modelOptions.contains(where: { $0.id == modelChoice }) {
-      modelChoice = PurchaseInputChoice.custom
-      modelCode = ""
-    }
+    brandChoice = value
+    if value != PurchaseInputChoice.custom { brandName = value }
+    refreshModelChoice()
   }
 
   private func applyModelChoice(_ value: String) {
-    guard value != PurchaseInputChoice.custom else { return }
-    guard let entry = session.catalogEntries.first(where: { $0.id == value }) else { return }
+    if value == PurchaseInputChoice.custom {
+      if modelChoice != PurchaseInputChoice.custom { modelCode = "" }
+      modelChoice = PurchaseInputChoice.custom
+      selectedCatalogEntry = nil
+      return
+    }
+    guard let entry = modelOptions.first(where: { $0.id == value }) else { return }
     applyCatalogEntry(entry)
   }
 
-  private func refreshChoicesForCurrentCategory() {
-    if brandChoice != PurchaseInputChoice.custom, !brandOptions.contains(brandChoice) {
-      brandChoice = PurchaseInputChoice.custom
-      brandName = ""
-    }
-
+  private func refreshModelChoice() {
+    // A missing model never invalidates a brand. Only detach a stale catalog model.
     if modelChoice != PurchaseInputChoice.custom, !modelOptions.contains(where: { $0.id == modelChoice }) {
       modelChoice = PurchaseInputChoice.custom
       modelCode = ""
+      selectedCatalogEntry = nil
     }
+    if let entry = selectedCatalogEntry,
+       entry.brandName != LocalBrandNormalizer.canonicalName(brandName) || entry.categoryName != category.title {
+      selectedCatalogEntry = nil
+    }
+  }
+
+  private func restoreEquipmentChoices() {
+    let selection = PurchaseCatalogSelection(brandName: brandName, modelCode: modelCode,
+      categoryName: category.title, entries: session.catalogEntries)
+    brandName = selection.brandName
+    brandChoice = selection.brandChoice
+    modelChoice = selection.modelChoice
+    if selectedCatalogEntry?.id != selection.modelChoice { selectedCatalogEntry = nil }
   }
 
   private func applyCatalogEntry(_ entry: LocalGearCatalogEntry) {
@@ -852,7 +887,6 @@ struct AddPurchaseView: View {
       selectedCatalogEntry = nil
       category = PurchaseCategoryChoice(categoryName: item.category?.name ?? "其他")
       brandName = item.brand?.name ?? ""
-      brandChoice = brandOptions.contains(brandName) ? brandName : PurchaseInputChoice.custom
       modelChoice = PurchaseInputChoice.custom
     }
 
@@ -865,6 +899,31 @@ struct AddPurchaseView: View {
     }
     notes = item.notes ?? ""
     selectedPhotoURLString = item.imageUrl
+    restoreEquipmentChoices()
+  }
+
+  private func applyRepeatPurchase(_ purchase: PurchaseRecord) {
+    let input = purchase.repeatPurchaseInput()
+    itemName = input.itemNameSnapshot
+    brandName = input.brandName ?? ""
+    modelCode = input.modelCode ?? ""
+    category = PurchaseCategoryChoice(categoryName: input.categoryName ?? "其他")
+    price = input.unitPriceCny.formatted(.number.grouping(.never).precision(.fractionLength(0...2)).locale(Locale(identifier: "en_US_POSIX")))
+    channel = input.channel ?? ""
+    selectedPhotoURLString = input.gearCoverImageUrl
+    selectedPhotoImage = GearImageResolver.localImage(imageKey: input.gearImageKey, coverImageUrl: input.gearCoverImageUrl)
+    switch input.profileDetails {
+    case .shuttle(let details):
+      ballsPerTube = details.ballsPerTube.map(String.init) ?? "12"
+      shuttleSpeed = details.speed ?? ""
+    case .racket(let details):
+      racketWeightSpec = RacketSpecOptions.normalizedWeightSpec(details.weightSpec)
+      racketGripSpec = RacketSpecOptions.normalizedGripSpec(details.gripSpec)
+    case .shoes(let details):
+      shoesSize = details.size ?? ""; shoesSizeSystem = details.sizeSystem ?? "EU"; shoesColorway = details.colorway ?? ""
+    default: break
+    }
+    restoreEquipmentChoices()
   }
 
   @ViewBuilder
@@ -926,6 +985,11 @@ struct AddPurchaseView: View {
         weightSpec: RacketSpecOptions.normalizedWeightSpec(racketWeightSpec),
         gripSpec: RacketSpecOptions.normalizedGripSpec(racketGripSpec)
       )
+      if repeatsSameGear, case .racket(var previous) = initialPurchase?.gearItem?.profileDetails {
+        previous.weightSpec = details.weightSpec
+        previous.gripSpec = details.gripSpec
+        details = previous
+      }
       if stringName != nil || mainTension != nil || crossTension != nil {
         details = details.appendingStringingRecord(StringingRecord(
           id: UUID(),
@@ -1151,8 +1215,28 @@ private enum PurchaseCategoryChoice: String, CaseIterable, Identifiable {
   }
 }
 
-private enum PurchaseInputChoice {
+enum PurchaseInputChoice {
   static let custom = "__custom__"
+}
+
+/// Resolve saved form values without requiring the brand to have a catalog model
+/// in this category, and without replacing the user's price or custom model text.
+struct PurchaseCatalogSelection {
+  let brandName: String
+  let brandChoice: String
+  let modelChoice: String
+
+  init(brandName: String, modelCode: String, categoryName: String, entries: [LocalGearCatalogEntry]) {
+    let canonicalBrand = LocalBrandNormalizer.canonicalName(brandName) ?? ""
+    self.brandName = canonicalBrand
+    brandChoice = LocalGearCatalog.brandOptions(categoryName: nil, entries: entries).contains(canonicalBrand)
+      ? canonicalBrand : PurchaseInputChoice.custom
+    let model = modelCode.trimmingCharacters(in: .whitespacesAndNewlines)
+    let match = canonicalBrand.isEmpty || model.isEmpty ? nil
+      : LocalGearCatalog.modelOptions(brandName: canonicalBrand, categoryName: categoryName, entries: entries)
+        .first { $0.modelCode?.caseInsensitiveCompare(model) == .orderedSame }
+    modelChoice = match?.id ?? PurchaseInputChoice.custom
+  }
 }
 
 private extension String {

@@ -1,4 +1,5 @@
 import PhotosUI
+import Observation
 import Charts
 import SwiftUI
 import UIKit
@@ -7,8 +8,15 @@ struct GearView: View {
   @Namespace private var equipmentTransition
   @Environment(AppSession.self) private var session
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+  @Environment(\.appNavigation) private var navigation
+  @Environment(\.appAccentColor) private var accent
+  @Environment(\.appReduceMotion) private var reduceMotion
+  @State private var highlightedGearID: String?
+  @State private var repeatPurchase: PurchaseRecord?
   @State private var query = ""
   @State private var selectedArchiveView: GearArchiveView = .wall
+  @State private var pegboardMode: PegboardLayoutMode = .active
+  @State private var pegboardRendering = PegboardRenderModel()
   @State private var selectedCategory: GearWallCategory = .all
   @AppStorage("gear.pegboard.sortOrder") private var pegboardSortOrder: PegboardSortOrder = .automatic
   @State private var selectedSort: GearWallSort = .recentPurchase
@@ -34,68 +42,104 @@ struct GearView: View {
   }
 
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 14) {
-        viewPicker
+    ScrollViewReader { proxy in
+      ScrollView {
+        VStack(alignment: .leading, spacing: 14) {
+          viewPicker
 
-        if !session.gearWallItems.isEmpty { controls }
+          if !session.gearWallItems.isEmpty { controls }
 
-        if let errorMessage = session.errorMessage {
-          ErrorBanner(message: errorMessage)
-        }
-
-        if session.isLoading && !session.hasLoadedInitialData {
-          LoadingStateView(title: "正在整理装备墙", message: "会根据本地购买记录生成装备档案。")
-            .padding(.horizontal)
-        } else if selectedArchiveView == .wall && filteredItems.isEmpty {
-          EmptyStateView(title: session.gearWallItems.isEmpty ? "还没有装备" : "没有匹配的装备",
-            message: session.gearWallItems.isEmpty ? "记录一次购买，建立你的装备清单。" : "试试其他关键词，或清除分类筛选。",
-            systemImage: selectedArchiveView.systemImage,
-            actionTitle: session.gearWallItems.isEmpty ? "记录购买" : "清除搜索与筛选",
-            action: {
-              if session.gearWallItems.isEmpty { showingPurchase = true }
-              else { query = ""; selectedCategory = .all }
-            })
-            .padding(.horizontal)
-        } else if selectedArchiveView == .pegboard && pegboardItems.isEmpty {
-          EmptyStateView(title: "没有可展示的装备", message: "洞洞板展示球筒、球拍和球鞋。试试其他筛选条件。", systemImage: selectedArchiveView.systemImage, actionTitle: "查看全部装备", action: { query = ""; selectedCategory = .all; selectedArchiveView = .wall })
-            .padding(.horizontal)
-        } else if selectedArchiveView == .wall {
-          LazyVGrid(columns: cardColumns, spacing: 14) {
-            ForEach(filteredItems) { item in
-              Button {
-                selectedGearItem = item
-              } label: {
-                GearWallCard(item: item)
-                  .equipmentZoomSource(id: item.id, namespace: equipmentTransition)
-              }
-              .buttonStyle(.plain)
-            }
+          if let errorMessage = session.errorMessage {
+            ErrorBanner(message: errorMessage)
           }
-          .padding(.horizontal)
-          .padding(.bottom, 28)
-        } else {
-          GearPegboardView(items: pegboardItems, sortOrder: $pegboardSortOrder, onSelect: { selectedGearItem = $0 })
+
+          if session.isLoading && !session.hasLoadedInitialData {
+            LoadingStateView(title: "正在整理装备墙", message: "会根据本地购买记录生成装备档案。")
+              .padding(.horizontal)
+          } else if selectedArchiveView == .wall && filteredItems.isEmpty {
+            EmptyStateView(title: session.gearWallItems.isEmpty ? "还没有装备" : "没有匹配的装备",
+              message: session.gearWallItems.isEmpty ? "记录一次购买，建立你的装备清单。" : "试试其他关键词，或清除分类筛选。",
+              systemImage: selectedArchiveView.systemImage,
+              actionTitle: session.gearWallItems.isEmpty ? "记录购买" : "清除搜索与筛选",
+              action: {
+                if session.gearWallItems.isEmpty { showingPurchase = true }
+                else { query = ""; selectedCategory = .all }
+              })
+              .padding(.horizontal)
+          } else if selectedArchiveView == .pegboard && pegboardItems.isEmpty {
+            EmptyStateView(title: "没有可展示的装备", message: "洞洞板展示球筒、球拍和球鞋。试试其他筛选条件。", systemImage: selectedArchiveView.systemImage, actionTitle: "查看全部装备", action: { query = ""; selectedCategory = .all; selectedArchiveView = .wall })
+              .padding(.horizontal)
+          } else if selectedArchiveView == .wall {
+            LazyVGrid(columns: cardColumns, spacing: 14) {
+              ForEach(filteredItems) { item in
+                Button {
+                  selectedGearItem = item
+                } label: {
+                  GearWallCard(item: item)
+                    .equipmentZoomSource(id: item.id, namespace: equipmentTransition)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                  if let purchase = latestPurchase(for: item) {
+                    Button { repeatPurchase = purchase } label: {
+                      Label("再买一次", systemImage: "arrow.clockwise")
+                    }
+                  }
+                }
+                .overlay(AppSurfaceStyle.card.shape
+                  .strokeBorder(accent.opacity(highlightedGearID == item.id ? 1 : 0), lineWidth: 2)
+                  .allowsHitTesting(false))
+                .id(item.id)
+              }
+            }
             .padding(.horizontal)
             .padding(.bottom, 28)
+          } else {
+            GearPegboardView(items: pegboardItems, sortOrder: $pegboardSortOrder, mode: $pegboardMode, rendering: pegboardRendering, onSelect: { selectedGearItem = $0 })
+              .padding(.horizontal)
+              .padding(.bottom, 28)
+          }
+        }
+      }
+      .background(Color(.systemGroupedBackground))
+      .searchable(text: $query, prompt: "搜索我的装备")
+      .navigationTitle("我的装备")
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationDestination(item: $selectedGearItem) { item in
+        GearDetailView(item: item)
+          .equipmentZoomDestination(id: item.id, namespace: equipmentTransition, enabled: selectedArchiveView == .wall)
+      }
+      .sheet(isPresented: $showingPurchase) { AddPurchaseView() }
+      .sheet(item: $repeatPurchase) { AddPurchaseView(initialPurchase: $0) }
+      .task(id: navigation?.gearReveal?.id) {
+        guard let request = navigation?.gearReveal else { return }
+        selectedGearItem = nil
+        query = ""
+        selectedCategory = .all
+        selectedArchiveView = .wall
+        do {
+          // Let the success sheet dismiss and the unfiltered grid lay out first.
+          try await Task.sleep(for: .milliseconds(350))
+          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+            proxy.scrollTo(request.gearID, anchor: .center)
+            highlightedGearID = request.gearID
+          }
+          try await Task.sleep(for: .seconds(2))
+          withAnimation(reduceMotion ? nil : .easeOut(duration: 0.3)) { highlightedGearID = nil }
+          if navigation?.gearReveal?.id == request.id { navigation?.gearReveal = nil }
+        } catch { highlightedGearID = nil }
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button { showingPurchase = true } label: { Image(systemName: "plus") }
+            .accessibilityLabel("记录购买")
         }
       }
     }
-    .background(Color(.systemGroupedBackground))
-    .searchable(text: $query, prompt: "搜索我的装备")
-    .navigationTitle("我的装备")
-    .navigationBarTitleDisplayMode(.inline)
-    .navigationDestination(item: $selectedGearItem) { item in
-      GearDetailView(item: item)
-        .equipmentZoomDestination(id: item.id, namespace: equipmentTransition, enabled: selectedArchiveView == .wall)
-    }
-    .sheet(isPresented: $showingPurchase) { AddPurchaseView() }
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        Button { showingPurchase = true } label: { Image(systemName: "plus") }
-          .accessibilityLabel("记录购买")
-      }
-    }
+  }
+
+  private func latestPurchase(for item: GearWallItem) -> PurchaseRecord? {
+    session.purchases.filter { $0.matchesGearItem(item) }.max { $0.purchaseSortDate < $1.purchaseSortDate }
   }
 
   private var pegboardItems: [GearWallItem] {
@@ -169,15 +213,81 @@ private struct GearSearchModifier: ViewModifier {
   }
 }
 
+struct PegboardRenderInput: Hashable {
+  let items: [GearWallItem]
+  let purchases: [PurchaseRecord]
+  let sortOrder: PegboardSortOrder
+  let mode: PegboardLayoutMode
+  let savedSnapshot: PegboardLayoutSnapshot?
+  let width: CGFloat
+
+  var instanceCount: Int {
+    items.reduce(0) { $0 + max(0, $1.activeQuantity) + (mode == .history ? $1.historicalQuantity : 0) }
+  }
+}
+
+@MainActor @Observable
+final class PegboardRenderModel {
+  fileprivate private(set) var layout: PegboardNativeLayout?
+  private(set) var renderCount = 0
+  private(set) var isRendering = false
+  @ObservationIgnored private var cachedLayouts: [PegboardRenderInput: PegboardNativeLayout] = [:]
+
+  func render(_ input: PegboardRenderInput) async {
+    guard input.width > 0 else { return }
+    if let cached = cachedLayouts[input] {
+      layout = cached
+      isRendering = false
+      return
+    }
+    isRendering = true
+    var instances: [PegboardInstance] = []
+    for item in input.sortOrder.sorted(input.items, purchases: input.purchases) {
+      guard !Task.isCancelled else { return }
+      let category = item.resolvedCategoryName
+      let asset = await GearImageLoader.asset(for: GearImageRequest(imageKey: item.imageKey,
+        coverImageUrl: item.coverImageUrl, categoryName: category, maxPixelSize: 1024, normalizeForPegboard: true))
+      guard !Task.isCancelled else { return }
+      let active = max(0, item.activeQuantity)
+      for index in 0..<active {
+        instances.append(PegboardInstance(item: item, categoryName: category, mode: .active,
+          index: index, indexInGroup: index + 1, image: asset.image, shuttleGeometry: asset.shuttleGeometry))
+      }
+      if input.mode == .history {
+        for index in 0..<item.historicalQuantity {
+          instances.append(PegboardInstance(item: item, categoryName: category, mode: .history,
+            index: index, indexInGroup: active + index + 1, image: asset.image, shuttleGeometry: asset.shuttleGeometry))
+        }
+      }
+    }
+    // Image work is complete. Layout now uses only values and prepared assets.
+    let rendered = PegboardNativeLayout(instances: instances, savedSnapshot: input.savedSnapshot,
+      boardWidth: input.width, preserveOrder: input.sortOrder != .automatic)
+    if cachedLayouts.count >= 4 { cachedLayouts.removeAll(keepingCapacity: true) }
+    cachedLayouts[input] = rendered
+    layout = rendered
+    renderCount += 1
+    isRendering = false
+  }
+}
+
 private struct GearPegboardView: View {
   @Environment(AppSession.self) private var session
   let items: [GearWallItem]
   @Binding var sortOrder: PegboardSortOrder
+  @Binding var mode: PegboardLayoutMode
+  let rendering: PegboardRenderModel
   let onSelect: (GearWallItem) -> Void
-  @State private var mode: PegboardLayoutMode = .active
-  @State private var boardWidth: CGFloat = 320
+  @State private var boardWidth: CGFloat = 0
+
+  private var input: PegboardRenderInput {
+    PegboardRenderInput(items: items, purchases: sortOrder == .firstPurchase ? session.purchases : [],
+      sortOrder: sortOrder, mode: mode,
+      savedSnapshot: sortOrder == .automatic ? session.pegboardLayouts[mode] : nil, width: boardWidth)
+  }
 
   var body: some View {
+    let request = input
     VStack(alignment: .leading, spacing: 12) {
       HStack(spacing: 12) {
         Picker("模式", selection: $mode) {
@@ -186,79 +296,39 @@ private struct GearPegboardView: View {
           }
         }
         .adaptivePickerStyle()
-
-        Text("\(instances.count) 件")
+        Text("\(request.instanceCount) 件")
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(.secondary)
           .frame(minWidth: 44, alignment: .trailing)
       }
 
-      if instances.isEmpty {
-        EmptyStateView(
-          title: mode == .active ? "暂无在用装备" : "暂无历史装备",
+      if request.instanceCount == 0 {
+        EmptyStateView(title: mode == .active ? "暂无在用装备" : "暂无历史装备",
           message: mode == .active ? "在购买记录里把装备状态设为在用后，会出现在这里。" : "历史模式会一起展示在用装备和已用完、退役装备。",
-          systemImage: "circle.grid.cross"
-        )
+          systemImage: "circle.grid.cross")
       } else {
-        GeometryReader { proxy in
-          let width = proxy.size.width
-          let layout = PegboardNativeLayout(
-            instances: instances,
-            savedSnapshot: sortOrder == .automatic ? session.pegboardLayouts[mode] : nil,
-            boardWidth: width,
-            preserveOrder: sortOrder != .automatic
-          )
-
-          ZStack(alignment: .topLeading) {
-            PegboardBackground()
-              .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-              .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                  .stroke(Color(.separator).opacity(0.24), lineWidth: 1)
-              )
-
+        ZStack(alignment: .topLeading) {
+          PegboardBackground().appSurface(.media)
+          if let layout = rendering.layout, !rendering.isRendering {
             ForEach(layout.placedInstances) { placed in
               PegboardItemView(placed: placed) {
                 if let item = items.first(where: { $0.id == placed.gearID }) { onSelect(item) }
               }
             }
+          } else {
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+              .accessibilityLabel("正在整理洞洞板")
           }
-          .frame(width: width, height: layout.boardHeight)
-          .onChange(of: width, initial: true) { _, value in boardWidth = value }
         }
-        .frame(height: PegboardNativeLayout.preferredHeight(
-          instances: instances,
-          savedSnapshot: sortOrder == .automatic ? session.pegboardLayouts[mode] : nil,
-          boardWidth: boardWidth,
-          preserveOrder: sortOrder != .automatic
-        ))
+        .frame(height: rendering.layout?.boardHeight ?? 700)
       }
     }
-  }
-
-  private var instances: [PegboardInstance] {
-    sortOrder.sorted(items, purchases: session.purchases).flatMap { item -> [PegboardInstance] in
-      let categoryName = item.resolvedCategoryName
-      let activeCount = max(0, item.activeQuantity)
-      let historyCount = item.historicalQuantity
-
-      let activeInstances = (0..<activeCount).map { index in
-        PegboardInstance(item: item, categoryName: categoryName, mode: .active, index: index, indexInGroup: index + 1)
+    .background(GeometryReader { proxy in
+      Color.clear.onChange(of: proxy.size.width, initial: true) { _, width in
+        boardWidth = width.rounded()
       }
-
-      guard mode == .history else {
-        return activeInstances
-      }
-
-      guard historyCount > 0 else {
-        return activeInstances
-      }
-
-      let historyInstances = (0..<historyCount).map { index in
-        PegboardInstance(item: item, categoryName: categoryName, mode: .history, index: index, indexInGroup: activeCount + index + 1)
-      }
-      return activeInstances + historyInstances
-    }
+    })
+    .task(id: request) { await rendering.render(request) }
   }
 }
 
@@ -408,11 +478,7 @@ private struct PegboardNativeLayout {
         id: instance.id,
         gearID: instance.item.id,
         name: instance.item.displayName,
-        pegboardImage: GearImageResolver.pegboardImage(
-          imageKey: instance.item.imageKey,
-          coverImageUrl: instance.item.coverImageUrl,
-          categoryName: instance.categoryName
-        ),
+        pegboardImage: instance.image,
         imageURL: GearImageResolver.preferredImageURL(
           imageKey: instance.item.imageKey,
           coverImageUrl: instance.item.coverImageUrl
@@ -475,13 +541,7 @@ private struct PegboardNativeLayout {
         id: instance.id,
         gearID: instance.item.id,
         name: instance.item.displayName,
-        pegboardImage: resolveImages
-          ? GearImageResolver.pegboardImage(
-            imageKey: instance.item.imageKey,
-            coverImageUrl: instance.item.coverImageUrl,
-            categoryName: instance.categoryName
-          )
-          : nil,
+        pegboardImage: resolveImages ? instance.image : nil,
         imageURL: resolveImages
           ? GearImageResolver.preferredImageURL(
             imageKey: instance.item.imageKey,
@@ -751,12 +811,14 @@ private struct PegboardNativeLayout {
   }
 }
 
-private struct PegboardInstance: Identifiable, Hashable {
+private struct PegboardInstance: Identifiable {
   let item: GearWallItem
   let categoryName: String
   let mode: PegboardLayoutMode
   let index: Int
   let indexInGroup: Int
+  let image: UIImage?
+  let shuttleGeometry: ShuttleTubeGeometry?
 
   var id: String {
     "\(item.id)::\(mode.rawValue)::\(index)"
@@ -785,18 +847,13 @@ private struct PegboardInstance: Identifiable, Hashable {
     categoryName.contains("球鞋")
   }
 
-  var shuttleGeometry: ShuttleTubeGeometry? {
-    guard isShuttle else { return nil }
-    return GearImageResolver.shuttleAsset(imageKey: item.imageKey, coverImageUrl: item.coverImageUrl)?.geometry
-  }
-
   func baseSize(boardWidth: CGFloat) -> CGSize {
     let longestPx = physicalLongestCm * pixelPerCm(boardWidth: boardWidth) * mobileBoardScale(boardWidth: boardWidth)
-    if isShuttle, let asset = GearImageResolver.shuttleAsset(imageKey: item.imageKey, coverImageUrl: item.coverImageUrl) {
-      if let geometry = asset.geometry {
+    if isShuttle, let image {
+      if let geometry = shuttleGeometry {
         return geometry.displaySize(sideLength: longestPx)
       }
-      let size = asset.image.size
+      let size = image.size
       let scale = longestPx / max(1, max(size.width, size.height))
       return CGSize(width: size.width * scale, height: size.height * scale)
     }
@@ -895,6 +952,7 @@ struct GearDetailView: View {
   @State private var showingEdit = false
   @State private var showingDeleteConfirmation = false
   @State private var selectedPurchase: PurchaseRecord?
+  @State private var repeatPurchase: PurchaseRecord?
   @State private var stringingTarget: GearWallItem?
   @State private var selectedStringingRecord: StringingRecord?
 
@@ -955,16 +1013,12 @@ struct GearDetailView: View {
             systemImage: "photo",
             imageKey: displayedItem.imageKey,
             coverImageUrl: displayedItem.coverImageUrl,
-            categoryName: displayedItem.resolvedCategoryName
+            categoryName: displayedItem.resolvedCategoryName,
+            surfaceStyle: .media
           )
           .aspectRatio(1, contentMode: .fit)
           .frame(maxWidth: 460)
           .frame(maxWidth: .infinity)
-          .background(.background, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-          .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-              .stroke(.quaternary, lineWidth: 1)
-          )
 
           VStack(alignment: .leading, spacing: 8) {
             Text(displayedItem.compactDisplayName)
@@ -1003,7 +1057,7 @@ struct GearDetailView: View {
             }
           }
           .padding(.horizontal, 14)
-          .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .appSurface()
 
           if purchaseRecords.contains(where: { $0.remainingQuantity > 0 }) {
             Button { showingQuickConsumption = true } label: {
@@ -1027,7 +1081,7 @@ struct GearDetailView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
-                .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .appSurface()
             } else {
               VStack(spacing: 10) {
                 ForEach(purchaseRecords) { purchase in
@@ -1062,7 +1116,19 @@ struct GearDetailView: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Button("编辑") { showingEdit = true }
+          Menu {
+            Button { showingEdit = true } label: {
+              Label("编辑", systemImage: "pencil")
+            }
+            if let latest = purchaseRecords.first {
+              Button { repeatPurchase = latest } label: {
+                Label("再买一次", systemImage: "arrow.clockwise")
+              }
+            }
+          } label: {
+            Image(systemName: "ellipsis")
+          }
+          .accessibilityLabel("更多操作")
         }
       }
       .sheet(isPresented: $showingQuickConsumption) {
@@ -1071,7 +1137,10 @@ struct GearDetailView: View {
       .sheet(isPresented: $showingEdit) {
         GearEditView(item: displayedItem)
       }
-      .sheet(item: $selectedPurchase) { purchase in
+      .sheet(item: $repeatPurchase) { AddPurchaseView(initialPurchase: $0) }
+      .sheet(item: $selectedPurchase, onDismiss: {
+        if !session.gearWallItems.contains(where: { $0.id == item.id }) { dismiss() }
+      }) { purchase in
         PurchaseRecordEditView(purchase: purchase)
       }
       .sheet(item: $stringingTarget) { item in
@@ -1109,6 +1178,7 @@ private struct GearEditView: View {
   @State private var selectedPhotoImage: UIImage?
   @State private var selectedPhotoURLString: String?
   @State private var isProcessingPhoto = false
+  @State private var photoRequestID: UUID?
   @State private var photoMessage: String?
   @State private var ballsPerTube: String
   @State private var shuttleSpeed: String
@@ -1125,6 +1195,8 @@ private struct GearEditView: View {
     let shuttleDetails = item.shuttleDetails
     let racketDetails = item.racketDetails
     let shoesDetails = item.shoesDetails
+    _selectedPhotoURLString = State(initialValue: GearPhotoProcessor.photoURL(for: item.coverImageUrl ?? "") != nil ? item.coverImageUrl : nil)
+    _selectedPhotoImage = State(initialValue: GearImageResolver.localImage(imageKey: nil, coverImageUrl: item.coverImageUrl))
     _name = State(initialValue: item.name)
     _brandName = State(initialValue: item.brand?.name ?? "")
     _modelCode = State(initialValue: item.modelCode ?? "")
@@ -1143,11 +1215,7 @@ private struct GearEditView: View {
       Form {
         Section("照片") {
           if let selectedPhotoImage {
-            Image(uiImage: selectedPhotoImage)
-              .resizable()
-              .scaledToFit()
-              .frame(maxWidth: .infinity, minHeight: 160, maxHeight: 240)
-              .padding(.vertical, 6)
+            GearPhotoPreview(image: selectedPhotoImage, reference: selectedPhotoURLString, isProcessing: isProcessingPhoto)
           } else {
             RemoteImageView(
               url: GearImageResolver.preferredImageURL(imageKey: item.imageKey, coverImageUrl: item.coverImageUrl),
@@ -1164,11 +1232,9 @@ private struct GearEditView: View {
           PhotosPicker(selection: $selectedPhoto, matching: .images) {
             Label("更换装备照片", systemImage: "photo")
           }
+          .disabled(isProcessingPhoto)
 
-          if isProcessingPhoto {
-            Label("正在处理照片", systemImage: "wand.and.stars")
-              .foregroundStyle(.secondary)
-          } else if let photoMessage {
+          if !isProcessingPhoto, let photoMessage {
             Text(photoMessage)
               .font(.footnote)
               .foregroundStyle(.secondary)
@@ -1190,9 +1256,7 @@ private struct GearEditView: View {
       }
       .navigationTitle("编辑装备")
       .navigationBarTitleDisplayMode(.inline)
-      .onChange(of: selectedPhoto) { _, item in
-        Task { await handlePhotoSelection(item) }
-      }
+      .task(id: selectedPhoto) { await handlePhotoSelection(selectedPhoto) }
       .editorActions(isValid: !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
         isBusy: isProcessingPhoto,
         draft: [name, brandName, modelCode, categoryName, ballsPerTube, shuttleSpeed,
@@ -1216,31 +1280,35 @@ private struct GearEditView: View {
   @MainActor
   private func handlePhotoSelection(_ item: PhotosPickerItem?) async {
     guard let item else { return }
+    let requestID = UUID()
+    photoRequestID = requestID
+    let previousImage = selectedPhotoImage
+    let previousReference = selectedPhotoURLString
     isProcessingPhoto = true
     photoMessage = nil
-    defer { isProcessingPhoto = false }
-
+    defer { if photoRequestID == requestID { isProcessingPhoto = false } }
     do {
       guard let data = try await item.loadTransferable(type: Data.self),
-            let image = UIImage(data: data) else {
-        photoMessage = "照片暂时无法读取。"
+            let image = UIImage(data: data) else { throw CocoaError(.fileReadCorruptFile) }
+      try Task.checkCancellation()
+      guard photoRequestID == requestID else { return }
+      selectedPhotoImage = image
+      selectedPhotoURLString = nil
+      let result = try await GearPhotoProcessor.processImportedImage(image, categoryName: categoryName)
+      guard !Task.isCancelled, photoRequestID == requestID else {
+        try? GearPhotoProcessor.deleteMedia(id: result.mediaID)
         return
       }
-      selectedPhotoImage = image
-      let result = try await GearPhotoProcessor.processImportedImage(image, categoryName: categoryName)
       selectedPhotoURLString = result.displayReference
-
-      if result.cutoutURL == nil {
-        photoMessage = "已保存原图，未识别到清晰主体。"
-      } else {
-        selectedPhotoImage = UIImage(contentsOfFile: result.displayURL.path) ?? image
-        photoMessage = "已完成本地抠图。"
-      }
+      selectedPhotoImage = UIImage(contentsOfFile: result.displayURL.path) ?? image
+      if result.cutoutURL == nil { photoMessage = "未识别到清晰主体，已保留原图。" }
     } catch {
-      photoMessage = error.localizedDescription
+      guard !Task.isCancelled, photoRequestID == requestID else { return }
+      selectedPhotoImage = previousImage
+      selectedPhotoURLString = previousReference
+      photoMessage = "照片处理失败，请重新选择。"
     }
   }
-
   @ViewBuilder
   private var profileSection: some View {
     if categoryName == "羽毛球" {
@@ -1318,6 +1386,7 @@ private struct PurchaseRecordEditView: View {
   @State private var consumptionEntry: ConsumptionEntryRequest?
   @State private var undoCandidate: ConsumptionRecord?
   @State private var showingUndoConfirmation = false
+  @State private var isDeleting = false
   @State private var price: String
   @State private var quantity: Int
   @State private var purchaseDate: Date
@@ -1370,10 +1439,14 @@ private struct PurchaseRecordEditView: View {
           TextField("可选", text: $notes, axis: .vertical)
             .lineLimit(3...5)
         }
+        Section {
+          PurchaseDeleteButton(purchase: purchase, isDeleting: $isDeleting)
+        }
       }
+      .disabled(isDeleting)
       .navigationTitle("编辑购买记录")
       .navigationBarTitleDisplayMode(.inline)
-      .editorActions(isValid: Double(price).map { $0.isFinite && $0 >= 0 } ?? false,
+      .editorActions(isValid: Double(price).map { $0.isFinite && $0 >= 0 } ?? false, isBusy: isDeleting,
         draft: [price, String(quantity), String(purchaseDate.timeIntervalSince1970),
                 String(statusDate.timeIntervalSince1970), status.rawValue, channel, notes,
                 (try? JSONEncoder().encode(consumptionRecords).base64EncodedString()) ?? ""]) {
@@ -1543,6 +1616,7 @@ private struct EditStringingRecordView: View {
           Button("删除这条穿线记录", role: .destructive) {
             showingDeleteConfirmation = true
           }
+          .foregroundStyle(SemanticTint.destructive)
         }
       }
       .disabled(isDeleting)
@@ -1641,7 +1715,7 @@ private struct GearProfileDetailSection: View {
         GearDetailRow(title: "速度号", value: item.shuttleDetails?.speed?.nilIfEmpty ?? "未记录")
       }
       .padding(.horizontal, 14)
-      .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .appSurface()
 
       if purchaseRecords.count > 1 {
         ShuttleItemTrendCard(records: purchaseRecords)
@@ -1666,7 +1740,7 @@ private struct GearProfileDetailSection: View {
         GearDetailRow(title: "穿线日期", value: item.racketDetails?.stringingDate.map(shortDate) ?? "未记录")
       }
       .padding(.horizontal, 14)
-      .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .appSurface()
 
       if let history = item.racketDetails?.stringHistory, !history.isEmpty {
         VStack(alignment: .leading, spacing: 8) {
@@ -1712,7 +1786,7 @@ private struct GearProfileDetailSection: View {
             }
             .buttonStyle(.plain)
             .padding(12)
-            .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .appSurface(.compact)
             .disabled(onEditStringingRecord == nil)
           }
         }
@@ -1745,12 +1819,13 @@ private struct GearProfileDetailSection: View {
         GearDetailRow(title: "状态", value: item.ownershipStatusText)
       }
       .padding(.horizontal, 14)
-      .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .appSurface()
     }
   }
 }
 
 private struct ShuttleItemTrendCard: View {
+  @Environment(\.appAccentColor) private var accent
   let records: [PurchaseRecord]
 
   var body: some View {
@@ -1804,9 +1879,9 @@ private struct ShuttleItemTrendCard: View {
               if let price = point.price {
                 LineMark(x: .value("购买日期", point.date), y: .value("单价", price))
                   .interpolationMethod(.linear)
-                  .foregroundStyle(.blue)
+                  .foregroundStyle(accent)
                 PointMark(x: .value("购买日期", point.date), y: .value("单价", price))
-                  .foregroundStyle(.blue)
+                  .foregroundStyle(accent)
                   .accessibilityLabel(point.date.formatted(date: .abbreviated, time: .omitted))
                   .accessibilityValue(money(price))
               }
@@ -1820,7 +1895,7 @@ private struct ShuttleItemTrendCard: View {
       }
     }
     .padding(12)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .appSurface()
   }
 }
 
@@ -1901,7 +1976,7 @@ private struct StringingCostTrendCard: View {
       }
       .frame(height: 160)
       .padding(12)
-      .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .appSurface()
     }
   }
 }
@@ -1936,7 +2011,7 @@ private struct GearDetailMetric: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(14)
-    .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    .appSurface(.compact)
   }
 }
 
@@ -1970,11 +2045,7 @@ private struct PurchaseRecordCard: View {
         .padding(.top, 3)
     }
     .padding(14)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .stroke(.quaternary, lineWidth: 1)
-    )
+    .appSurface()
   }
 }
 
@@ -2055,11 +2126,7 @@ private struct GearWallCard: View {
     }
     .padding(12)
     .frame(maxWidth: .infinity, alignment: .topLeading)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .stroke(.quaternary, lineWidth: 1)
-    )
+    .appSurface()
   }
 }
 
@@ -2285,7 +2352,8 @@ private extension GearWallItem {
     if categoryBucket == .shuttle {
       var pills = [
         GearWallPill(text: category?.name ?? "羽毛球", color: .gray),
-        GearWallPill(text: "库存 \(activeQuantity)", color: .green)
+        GearWallPill(text: isLowOnShuttles ? "仅剩1筒" : "库存 \(stockQuantity)",
+          color: isLowOnShuttles ? SemanticTint.stored : SemanticTint.active)
       ]
       if let speed = shuttleDetails?.speed, !speed.isEmpty {
         pills.append(GearWallPill(text: "速度 \(speed)", color: .blue))

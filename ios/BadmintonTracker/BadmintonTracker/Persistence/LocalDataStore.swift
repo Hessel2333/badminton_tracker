@@ -42,12 +42,21 @@ struct LocalDataStore {
       guard decoded.files.allSatisfy({ $0.dataBase64.flatMap { Data(base64Encoded: $0) } != nil }) else {
         throw BackupPreviewError.missingPhotos
       }
+      let references = Set(decoded.files.map(\.originalURLString))
+      guard references.count == decoded.files.count,
+            Set(decoded.files.map(\.relativePath)).count == decoded.files.count,
+            decoded.files.allSatisfy({ validBackupPath($0.relativePath) }) else {
+        throw BackupPreviewError.invalidData
+      }
+      guard decoded.data.localFileImageReferences().filter(isLocalPhotoReference).allSatisfy(references.contains) else {
+        throw BackupPreviewError.missingPhotos
+      }
       snapshot = decoded.data
       manifest = decoded
     }
     guard (1...2).contains(snapshot.version),
-          Set(snapshot.purchases.map(\.id)).count == snapshot.purchases.count,
-          Set(snapshot.wishlistItems.map(\.id)).count == snapshot.wishlistItems.count else {
+          Set(snapshot.purchases.map { StableUUID.from($0.id) }).count == snapshot.purchases.count,
+          Set(snapshot.wishlistItems.map { StableUUID.from($0.id) }).count == snapshot.wishlistItems.count else {
       throw BackupPreviewError.invalidData
     }
     return PreparedBackup(data: data, isLegacy: isLegacy, purchaseCount: snapshot.purchases.count,
@@ -168,6 +177,52 @@ struct LocalDataStore {
     return makeAppData(from: snapshot)
   }
 
+  func deletePurchaseWithUndo(id: String) throws -> PurchaseDeletionResult {
+    let snapshot = try loadSnapshot()
+    guard let purchase = snapshot.purchases.first(where: { $0.id == id }) else {
+      throw ConsumptionValidationError.missingPurchase
+    }
+    // Keep only this purchase's media in memory for the short undo window.
+    let files = try GearPhotoProcessor.archiveMedia(for: purchase.gearItem?.coverImageUrl)
+    let identity = LocalGearIdentity.id(for: purchase)
+    let relatedIDs = Set(snapshot.purchases.filter { $0.id != id && LocalGearIdentity.id(for: $0) == identity }.map(\.id))
+    let data = try deletePurchaseRecord(id: id)
+    return PurchaseDeletionResult(data: data, deletion: PurchaseDeletion(purchase: purchase, mediaFiles: files, relatedPurchaseIDs: relatedIDs))
+  }
+
+  func restorePurchase(_ deletion: PurchaseDeletion) throws -> LocalAppData {
+    var snapshot = try loadSnapshot()
+    guard !snapshot.purchases.contains(where: { $0.id == deletion.purchase.id }) else { return makeAppData(from: snapshot) }
+    var purchase = deletion.purchase
+    let identity = LocalGearIdentity.id(for: purchase)
+    // Preserve edits and purchases made after deletion, including a changed cover.
+    if let current = snapshot.purchases.first(where: { deletion.relatedPurchaseIDs.contains($0.id) || LocalGearIdentity.id(for: $0) == identity }),
+       let gear = current.gearItem, let category = current.category {
+      purchase = purchase.replacingGearDetails(name: current.itemNameSnapshot, brand: current.brand,
+        category: category, modelCode: gear.modelCode, gearID: gear.id ?? identity,
+        coverImageUrl: gear.coverImageUrl, imageKey: gear.imageKey,
+        profileDetails: gear.profileDetails, itemStatus: purchase.itemStatus)
+    }
+    let needsArchivedMedia = purchase.gearItem?.coverImageUrl == deletion.purchase.gearItem?.coverImageUrl
+    let restoredFiles = try GearPhotoProcessor.restoreMedia(needsArchivedMedia ? deletion.mediaFiles : [:])
+    var committed = false
+    defer { if !committed { GearPhotoProcessor.removeRestoredFiles(restoredFiles) } }
+    snapshot.purchases.append(purchase)
+    try save(snapshot)
+    committed = true
+    return try load()
+  }
+
+  func deletePurchaseRecord(id: String) throws -> LocalAppData {
+    var snapshot = try loadSnapshot()
+    guard snapshot.purchases.contains(where: { $0.id == id }) else {
+      throw ConsumptionValidationError.missingPurchase
+    }
+    snapshot.purchases.removeAll { $0.id == id }
+    try save(snapshot)
+    return makeAppData(from: snapshot)
+  }
+
   func createWishlistItem(_ input: WishlistEditInput) throws -> LocalAppData {
     var snapshot = try loadSnapshot()
     snapshot.wishlistItems.insert(makeWishlistItem(from: input), at: 0)
@@ -271,6 +326,7 @@ struct LocalDataStore {
   }
 
   func importBackupData(_ data: Data) throws -> LocalAppData {
+    _ = try Self.prepareBackup(data: data, isLegacy: true)
     var snapshot = try Self.decoder.decode(LocalAppSnapshot.self, from: data)
     snapshot.version = max(1, snapshot.version)
     try save(snapshot)
@@ -278,8 +334,9 @@ struct LocalDataStore {
   }
 
   func importBackupPackageData(_ data: Data) throws -> LocalAppData {
+    _ = try Self.prepareBackup(data: data)
     let manifest = try Self.decoder.decode(LocalBackupManifest.self, from: data)
-    return try importBackupManifest(manifest, wrapper: nil)
+    return try importBackupManifest(manifest)
   }
 
   func importBackupPackage(at url: URL) throws -> LocalAppData {
@@ -288,20 +345,20 @@ struct LocalDataStore {
   }
 
   func importBackupPackage(_ wrapper: FileWrapper) throws -> LocalAppData {
-    guard let manifestData = wrapper.fileWrappers?[Self.manifestFileName]?.regularFileContents else {
-      throw LocalBackupError.missingManifest
-    }
-
-    let manifest = try Self.decoder.decode(LocalBackupManifest.self, from: manifestData)
-    return try importBackupManifest(manifest, wrapper: wrapper)
+    let backup = try Self.prepareBackup(package: wrapper)
+    return try importBackupPackageData(backup.data)
   }
 
-  private func importBackupManifest(_ manifest: LocalBackupManifest, wrapper: FileWrapper?) throws -> LocalAppData {
+  private func importBackupManifest(_ manifest: LocalBackupManifest) throws -> LocalAppData {
     var snapshot = manifest.data
-    snapshot.version = max(1, snapshot.version)
-    let remappedURLs = try restoreBackupFiles(manifest.files, from: wrapper)
-    snapshot = snapshot.replacingFileURLs(remappedURLs)
+    let restored = try restoreBackupFiles(manifest.files)
+    var committed = false
+    defer {
+      if !committed { for id in restored.mediaIDs { try? GearPhotoProcessor.deleteMedia(id: id) } }
+    }
+    snapshot = snapshot.replacingFileURLs(restored.references)
     try save(snapshot)
+    committed = true
     return makeAppData(from: snapshot)
   }
 
@@ -491,9 +548,11 @@ struct LocalDataStore {
 
     // Repository-created equipment may exist without a purchase. Only remove the
     // purchase-derived records that disappeared from this legacy feature snapshot.
-    for user in existingUsers where user.legacyIdentity != nil && !retainedUserIDs.contains(user.id) {
-      context.delete(user)
-    }
+    let removedUsers = existingUsers.filter { $0.legacyIdentity != nil && !retainedUserIDs.contains($0.id) }
+    let removedUserIDs = Set(removedUsers.map(\.id))
+    removedUsers.forEach(context.delete)
+    let stringingRecords = try context.fetch(FetchDescriptor<StringingRecordEntity>())
+    stringingRecords.filter { removedUserIDs.contains($0.userEquipmentID) }.forEach(context.delete)
 
     let existingPurchases = try context.fetch(FetchDescriptor<PurchaseRecordEntity>())
     let purchasesByID = Dictionary(uniqueKeysWithValues: existingPurchases.map { ($0.id, $0) })
@@ -580,23 +639,14 @@ struct LocalDataStore {
     )))
   }
 
-  private var photoFolderURL: URL {
-    legacyFileURL.deletingLastPathComponent()
-      .appending(path: "GearPhotos", directoryHint: .isDirectory)
-  }
-
   private func backupAttachments(from snapshot: LocalAppSnapshot) throws -> [LocalBackupAttachment] {
     let references = snapshot.localFileImageReferences()
     var attachments: [LocalBackupAttachment] = []
     var seen: Set<String> = []
 
-    for reference in references {
-      guard !seen.contains(reference),
-            let sourceURL = localImageFileURL(for: reference),
-            FileManager.default.fileExists(atPath: sourceURL.path) else {
-        continue
-      }
-
+    func appendFile(reference: String, sourceURL: URL) throws {
+      guard !seen.contains(reference) else { return }
+      guard FileManager.default.fileExists(atPath: sourceURL.path) else { throw LocalBackupError.missingLocalPhoto }
       seen.insert(reference)
       let packageFileName = Self.packagePhotoFileName(index: attachments.count + 1, sourceURL: sourceURL)
       attachments.append(
@@ -611,30 +661,58 @@ struct LocalDataStore {
       )
     }
 
+    for reference in references {
+      guard Self.isLocalPhotoReference(reference) else { continue }
+      guard let sourceURL = localImageFileURL(for: reference),
+            FileManager.default.fileExists(atPath: sourceURL.path) else { throw LocalBackupError.missingLocalPhoto }
+      try appendFile(reference: reference, sourceURL: sourceURL)
+      // Keep the whole asset so restoring a cutout also restores its original.
+      if let files = GearPhotoProcessor.mediaFiles(for: reference) {
+        let storage = LocalMediaStorage()
+        for path in [files.originalRelativePath, files.processedRelativePath, files.thumbnailRelativePath].compactMap({ $0 }) {
+          if let url = storage.fileURL(forRelativePath: path) {
+            try appendFile(reference: GearPhotoProcessor.localPhotoReference(for: url), sourceURL: url)
+          }
+        }
+      }
+    }
+
     return attachments
   }
 
-  private func restoreBackupFiles(_ files: [LocalBackupFile], from wrapper: FileWrapper?) throws -> [String: String] {
-    guard !files.isEmpty else { return [:] }
-
-    try FileManager.default.createDirectory(at: photoFolderURL, withIntermediateDirectories: true)
+  private func restoreBackupFiles(_ files: [LocalBackupFile]) throws -> RestoredBackupMedia {
+    let storage = LocalMediaStorage()
+    var mediaIDs: Set<UUID> = []
+    var assetMapping: [UUID: UUID] = [:]
     var remappedURLs: [String: String] = [:]
-
-    for file in files {
-      let embeddedData = file.dataBase64.flatMap { Data(base64Encoded: $0) }
-      let packageData = wrapper.flatMap { regularFileData(in: $0, relativePath: file.relativePath) }
-      guard let data = embeddedData ?? packageData else {
-        continue
+    do {
+      for file in files {
+        guard let data = file.dataBase64.flatMap({ Data(base64Encoded: $0) }) else { throw BackupPreviewError.missingPhotos }
+        let sourcePath = storage.relativePath(fromReference: file.originalURLString)?.split(separator: "/")
+        let sourceID = sourcePath?.first.flatMap { UUID(uuidString: String($0)) }
+        let fileName: String
+        if let sourcePath, sourceID != nil {
+          guard sourcePath.count == 2,
+                ["original.jpg", "processed.png", "thumbnail.jpg"].contains(String(sourcePath[1])) else {
+            throw BackupPreviewError.invalidData
+          }
+          fileName = String(sourcePath[1])
+        } else {
+          fileName = "original.jpg"
+        }
+        let destinationID = sourceID.flatMap { assetMapping[$0] } ?? UUID()
+        if let sourceID { assetMapping[sourceID] = destinationID }
+        mediaIDs.insert(destinationID)
+        let folder = try storage.makeAssetDirectory(id: destinationID)
+        let destinationURL = folder.appending(path: fileName)
+        try data.write(to: destinationURL, options: .atomic)
+        remappedURLs[file.originalURLString] = GearPhotoProcessor.localPhotoReference(for: destinationURL)
       }
-
-      let sourceName = URL(fileURLWithPath: file.relativePath).lastPathComponent
-      let destinationName = Self.importedPhotoFileName(sourceName)
-      let destinationURL = photoFolderURL.appending(path: destinationName)
-      try data.write(to: destinationURL, options: [.atomic])
-      remappedURLs[file.originalURLString] = GearPhotoProcessor.localPhotoReference(for: destinationURL)
+      return RestoredBackupMedia(references: remappedURLs, mediaIDs: mediaIDs)
+    } catch {
+      for id in mediaIDs { try? storage.removeAsset(id: id) }
+      throw error
     }
-
-    return remappedURLs
   }
 
   private func localImageFileURL(for reference: String) -> URL? {
@@ -651,19 +729,14 @@ struct LocalDataStore {
     return sourceURL
   }
 
-  private func regularFileData(in wrapper: FileWrapper, relativePath: String) -> Data? {
-    let parts = relativePath.split(separator: "/").map(String.init)
-    guard !parts.isEmpty else { return nil }
+  private static func isLocalPhotoReference(_ reference: String) -> Bool {
+    guard let scheme = URLComponents(string: reference)?.scheme else { return false }
+    return [LocalMediaStorage.referenceScheme, "badminton-gear-photo", "file"].contains(scheme)
+  }
 
-    var current = wrapper
-    for part in parts {
-      guard let next = current.fileWrappers?[part] else {
-        return nil
-      }
-      current = next
-    }
-
-    return current.regularFileContents
+  private static func validBackupPath(_ path: String) -> Bool {
+    let parts = path.split(separator: "/", omittingEmptySubsequences: false)
+    return parts.count == 2 && parts[0] == photosDirectoryName && !["", ".", ".."].contains(parts[1])
   }
 
   private static func packagePhotoFileName(index: Int, sourceURL: URL) -> String {
@@ -674,10 +747,6 @@ struct LocalDataStore {
           : "-"
       }
     return "\(index)-\(String(safeName))"
-  }
-
-  private static func importedPhotoFileName(_ sourceName: String) -> String {
-    "\(UUID().uuidString)-\(sourceName)"
   }
 
   private func makePurchaseRecord(
@@ -1028,6 +1097,11 @@ private struct LocalBackupAttachment {
   let manifestFile: LocalBackupFile
 }
 
+private struct RestoredBackupMedia {
+  let references: [String: String]
+  let mediaIDs: Set<UUID>
+}
+
 private enum WishlistConversionError: LocalizedError {
   case itemNotFound
 
@@ -1037,12 +1111,12 @@ private enum WishlistConversionError: LocalizedError {
 }
 
 private enum LocalBackupError: LocalizedError {
-  case missingManifest
+  case missingLocalPhoto
 
   var errorDescription: String? {
     switch self {
-    case .missingManifest:
-      "备份包无法读取。"
+    case .missingLocalPhoto:
+      AppLanguage.text("部分照片无法读取，备份未导出。请重新选择照片后再试。")
     }
   }
 }

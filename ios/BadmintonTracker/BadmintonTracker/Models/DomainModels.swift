@@ -1,15 +1,20 @@
 import Foundation
 
 enum AppDate {
+  private static let fractionalStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+  private static let standardStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: false)
+  nonisolated(unsafe) private static let parsedDates: NSCache<NSString, NSDate> = {
+    let cache = NSCache<NSString, NSDate>()
+    cache.countLimit = 2000
+    return cache
+  }()
+
   static func parseISODate(_ rawValue: String?) -> Date? {
     guard let rawValue, !rawValue.isEmpty else { return nil }
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let date = formatter.date(from: rawValue) {
-      return date
-    }
-    formatter.formatOptions = [.withInternetDateTime]
-    return formatter.date(from: rawValue)
+    if let cached = parsedDates.object(forKey: rawValue as NSString) { return cached as Date }
+    guard let date = (try? fractionalStyle.parse(rawValue)) ?? (try? standardStyle.parse(rawValue)) else { return nil }
+    parsedDates.setObject(date as NSDate, forKey: rawValue as NSString)
+    return date
   }
 }
 
@@ -648,7 +653,21 @@ struct GearResponse: Decodable {
   let items: [GearItem]
 }
 
+extension PurchaseRecord {
+  func repeatPurchaseInput(on date: Date = Date()) -> PurchaseInput {
+    PurchaseInput(catalogEquipmentID: gearItem?.catalogEquipmentID,
+      brandName: brand?.name, modelCode: gearItem?.modelCode,
+      categoryName: category?.name, gearCoverImageUrl: gearItem?.coverImageUrl,
+      gearImageKey: gearItem?.imageKey, profileDetails: gearItem?.profileDetails,
+      itemNameSnapshot: itemNameSnapshot, unitPriceCny: unitPriceCny, quantity: 1,
+      totalPriceCny: unitPriceCny, purchaseDate: ISO8601DateFormatter().string(from: date),
+      channel: channel, itemStatus: .inUse)
+  }
+}
+
 struct GearWallItem: Decodable, Identifiable, Hashable {
+  var stockQuantity: Int { max(0, totalQuantity - usedUpQuantity - wornOutQuantity) }
+  var isLowOnShuttles: Bool { category?.name == "羽毛球" && stockQuantity == 1 }
   let id: String
   let name: String
   let coverImageUrl: String?

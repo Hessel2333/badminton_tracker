@@ -26,7 +26,7 @@ struct LocalGearCatalogEntry: Identifiable, Hashable {
   }
 
   var searchText: String {
-    ([name, brandName, modelCode, categoryName, name.replacingOccurrences(of: "天斧", with: "ASTROX").replacingOccurrences(of: "弓箭", with: "ARCSABER").replacingOccurrences(of: "驭", with: "DriveX")] + tags)
+    ([name, brandName, modelCode, categoryName, name.replacingOccurrences(of: "天斧", with: "ASTROX").replacingOccurrences(of: "弓箭", with: "ARCSABER").replacingOccurrences(of: "驭", with: "DriveX").replacingOccurrences(of: "疾光", with: "NANOFLARE")] + tags)
       .compactMap { $0 }
       .joined(separator: " ")
   }
@@ -310,7 +310,7 @@ enum GearDisplayName {
   static func resolve(name: String, brand: String?, model: String?, category: String?, imageKey: String?,
                       entries: [LocalGearCatalogEntry] = LocalGearCatalog.entries) -> String {
     let normalized = canonicalName(name, brand: brand, model: nil, category: category)
-    if normalized != name || normalized.hasPrefix("天斧 ") || normalized.hasPrefix("弓箭 ") || normalized.hasPrefix("驭 12") { return normalized }
+    if normalized != name || normalized.hasPrefix("疾光 ") || normalized.hasPrefix("天斧 ") || normalized.hasPrefix("弓箭 ") || normalized.hasPrefix("驭 12") { return normalized }
     if let entry = LocalGearCatalog.entry(matchingName: name, brandName: brand, modelCode: model,
                                          categoryName: category, entries: entries) {
       return canonicalName(entry.name, brand: entry.brandName, model: entry.modelCode, category: entry.categoryName)
@@ -338,7 +338,7 @@ enum GearDisplayName {
         .replacingOccurrences(of: "尤尼克斯", with: "")
         .replacingOccurrences(of: "\\s+", with: "", options: .regularExpression)
       key = key.replacingOccurrences(of: "（", with: "(").replacingOccurrences(of: "）", with: ")")
-      let series: [(String, String)] = [("ARCSABER", "弓箭"), ("ASTROX", "天斧"),
+      let series: [(String, String)] = [("NANOFLARE", "疾光"), ("疾光", "疾光"), ("NF-", "疾光"), ("NF", "疾光"), ("ARCSABER", "弓箭"), ("ASTROX", "天斧"),
         ("弓箭", "弓箭"), ("天斧", "天斧"), ("ARC", "弓箭"), ("AX", "天斧"), ("弓", "弓箭")]
       var label: String?
       for (prefix, title) in series where key.hasPrefix(prefix) {
@@ -420,7 +420,7 @@ enum PegboardSortOrder: String, CaseIterable, Identifiable {
 
   func sorted(_ items: [GearWallItem], purchases: [PurchaseRecord]) -> [GearWallItem] {
     guard self != .automatic else { return items }
-    let firstDates = Dictionary(grouping: purchases, by: LocalGearIdentity.id(for:)).mapValues {
+    let firstDates = Dictionary(grouping: self == .firstPurchase ? purchases : [], by: LocalGearIdentity.id(for:)).mapValues {
       $0.compactMap { AppDate.parseISODate($0.purchaseDate) }.min()
     }
     return items.sorted { left, right in

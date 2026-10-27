@@ -210,7 +210,7 @@ struct ConsumptionHistoryCard: View {
         }
       }
       .padding(14)
-      .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+      .appSurface()
     }
   }
 }

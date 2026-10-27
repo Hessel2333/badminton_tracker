@@ -161,15 +161,12 @@ private struct AnalyticsChartCard<Content: View>: View {
       content
     }
     .padding(16)
-    .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 20, style: .continuous)
-        .stroke(.quaternary, lineWidth: 1)
-    )
+    .appSurface()
   }
 }
 
 private struct TrendChartCard: View {
+  @Environment(\.appAccentColor) private var accent
   let data: [TrendPoint]
   let rangeLabel: String
   let onSelect: (String) -> Void
@@ -199,7 +196,7 @@ private struct TrendChartCard: View {
             y: .value("投入", item.amount)
           )
           .interpolationMethod(.linear)
-          .foregroundStyle(.blue.opacity(0.14))
+          .foregroundStyle(accent.opacity(0.14))
           .accessibilityHidden(true)
 
           LineMark(
@@ -207,7 +204,7 @@ private struct TrendChartCard: View {
             y: .value("投入", item.amount)
           )
           .interpolationMethod(.linear)
-          .foregroundStyle(.blue)
+          .foregroundStyle(accent)
           .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
           .accessibilityHidden(true)
 
@@ -215,7 +212,7 @@ private struct TrendChartCard: View {
             x: .value("时间", item.bucket),
             y: .value("投入", item.amount)
           )
-          .foregroundStyle(.blue)
+          .foregroundStyle(accent)
           .symbolSize(30)
           .accessibilityLabel(item.bucket)
           .accessibilityValue(exactChartMoney(item.amount))
@@ -929,6 +926,7 @@ private struct StringingAnalysisCard: View {
 
 struct AnalyticsPurchaseDetail: View {
   @Environment(AppSession.self) private var session
+  @State private var isDeleting = false
   let purchaseID: String
 
   var body: some View {
@@ -953,6 +951,9 @@ struct AnalyticsPurchaseDetail: View {
           if let notes = purchase.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Section("备注") { Text(notes) }
           }
+          Section {
+            PurchaseDeleteButton(purchase: purchase, isDeleting: $isDeleting)
+          }
         }
       } else {
         ContentUnavailableView("记录已不存在", systemImage: "bag")
@@ -960,6 +961,8 @@ struct AnalyticsPurchaseDetail: View {
     }
     .navigationTitle("购买详情")
     .navigationBarTitleDisplayMode(.inline)
+    .disabled(isDeleting)
+    .navigationBarBackButtonHidden(isDeleting)
   }
 }
 
@@ -978,7 +981,7 @@ private struct AnalyticsSummary: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding()
-    .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+    .appSurface()
     .accessibilityElement(children: .combine)
   }
 }

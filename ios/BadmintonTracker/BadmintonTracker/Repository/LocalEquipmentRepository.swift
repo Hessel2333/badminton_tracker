@@ -141,6 +141,9 @@ final class LocalEquipmentRepository: EquipmentRepository {
   func updatePurchaseRecord(id: String, input: PurchaseEditInput) async throws -> LocalAppData {
     try store.updatePurchaseRecord(id: id, input: input)
   }
+  func deletePurchaseRecord(id: String) async throws -> LocalAppData { try store.deletePurchaseRecord(id: id) }
+  func deletePurchaseWithUndo(id: String) async throws -> PurchaseDeletionResult { try store.deletePurchaseWithUndo(id: id) }
+  func restorePurchase(_ deletion: PurchaseDeletion) async throws -> LocalAppData { try store.restorePurchase(deletion) }
   func createWishlistItem(_ input: WishlistEditInput) async throws -> LocalAppData { try store.createWishlistItem(input) }
   func updateWishlistItem(id: String, input: WishlistEditInput) async throws -> LocalAppData {
     try store.updateWishlistItem(id: id, input: input)

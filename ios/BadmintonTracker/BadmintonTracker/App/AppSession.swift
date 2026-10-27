@@ -13,16 +13,39 @@ final class AppSession {
   enum UndoOperation {
     case wishlist(WishlistItem)
     case consumption(purchaseID: String, recordID: String, originalStatus: ItemStatus)
+    case purchase(PurchaseDeletion)
   }
-  var undoOperation: UndoOperation?
+  var undoOperation: UndoOperation? {
+    didSet {
+      undoVersion = UUID()
+      undoExpiryTask?.cancel()
+      guard case .purchase = undoOperation else { return }
+      let version = undoVersion
+      let duration = purchaseUndoDuration
+      undoExpiryTask = Task { [weak self] in
+        do {
+          try await Task.sleep(for: duration)
+          while self?.isUndoing == true { try await Task.sleep(for: .milliseconds(100)) }
+          guard let self, self.undoVersion == version else { return }
+          self.undoOperation = nil
+        } catch { /* A newer action replaced this undo window. */ }
+      }
+    }
+  }
+  @ObservationIgnored private var undoExpiryTask: Task<Void, Never>?
+  @ObservationIgnored private var undoVersion = UUID()
+  private let purchaseUndoDuration: Duration
   var isUndoing = false
 
   func undoLastOperation() async -> Bool {
     guard let operation = undoOperation, !isUndoing else { return false }
+    let version = undoVersion
     isUndoing = true
     defer { isUndoing = false }
     do {
       switch operation {
+      case .purchase(let deletion):
+        apply(try await repository.restorePurchase(deletion))
       case .wishlist(let item):
         if isDemoMode { wishlistItems.insert(item, at: 0) }
         else { apply(try await repository.restoreWishlistItem(item)) }
@@ -38,7 +61,7 @@ final class AppSession {
           notes: purchase.notes))
         guard saved else { return false }
       }
-      undoOperation = nil
+      if undoVersion == version { undoOperation = nil }
       return true
     } catch { errorMessage = error.localizedDescription; return false }
   }
@@ -48,19 +71,22 @@ final class AppSession {
   var hasLoadedInitialData = false
   var errorMessage: String?
 
-  var purchases: [PurchaseRecord] = []
+  var purchases: [PurchaseRecord] = [] { didSet { invalidateSpending() } }
   var gearItems: [GearItem] = []
-  var gearWallItems: [GearWallItem] = []
+  var gearWallItems: [GearWallItem] = [] { didSet { invalidateSpending() } }
   var pegboardLayouts: PegboardLayoutStore = .empty
-  var wishlistItems: [WishlistItem] = []
+  var wishlistItems: [WishlistItem] = [] { didSet { cachedRangeAnalytics.removeAll() } }
   var catalogEntries: [LocalGearCatalogEntry] = []
   var analytics: AnalyticsData = .empty
   private let repository: any EquipmentRepository
   private let recoveryURL: URL
+  @ObservationIgnored private var cachedSpendingEntries: [SpendingEntry]?
+  @ObservationIgnored private var cachedRangeAnalytics: [String: AnalyticsData] = [:]
 
-  init(repository: (any EquipmentRepository)? = nil, recoveryURL: URL? = nil) {
+  init(repository: (any EquipmentRepository)? = nil, recoveryURL: URL? = nil, purchaseUndoDuration: Duration = .seconds(8)) {
     self.repository = repository ?? LocalEquipmentRepository()
     self.recoveryURL = recoveryURL ?? Self.recoveryBackupURL
+    self.purchaseUndoDuration = purchaseUndoDuration
   }
 
   func enterDemoMode() {
@@ -117,11 +143,31 @@ final class AppSession {
     isLoading = false
   }
 
-  var spendingEntries: [SpendingEntry] { SpendingLedger.entries(purchases: purchases, gear: gearWallItems) }
+  private func invalidateSpending() {
+    cachedSpendingEntries = nil
+    cachedRangeAnalytics.removeAll()
+  }
+
+  var spendingEntries: [SpendingEntry] {
+    // Read observable inputs even on a cache hit so the UI still tracks edits.
+    let records = purchases
+    let equipment = gearWallItems
+    if let cachedSpendingEntries { return cachedSpendingEntries }
+    let entries = SpendingLedger.entries(purchases: records, gear: equipment)
+    cachedSpendingEntries = entries
+    return entries
+  }
 
   func analytics(for range: String) -> AnalyticsData {
-    SpendingLedger.analytics(entries: spendingEntries,
-      base: LocalDataStore.makeAnalytics(from: purchases, wishlistItems: wishlistItems, range: range), range: range)
+    let entries = spendingEntries
+    let records = purchases
+    let wishlist = wishlistItems
+    let cacheKey = "\(Calendar.current.component(.year, from: Date())):\(range)"
+    if let cached = cachedRangeAnalytics[cacheKey] { return cached }
+    let result = SpendingLedger.analytics(entries: entries,
+      base: LocalDataStore.makeAnalytics(from: records, wishlistItems: wishlist, range: range), range: range)
+    cachedRangeAnalytics[cacheKey] = result
+    return result
   }
 
   func exportLocalBackupData() throws -> Data {
@@ -334,6 +380,23 @@ final class AppSession {
     }
     isLoading = false
     return errorMessage == nil
+  }
+
+  @discardableResult
+  func deletePurchaseRecord(id: String) async -> Bool {
+    guard !isDemoMode else { return false }
+    isLoading = true
+    defer { isLoading = false }
+    errorMessage = nil
+    do {
+      let result = try await repository.deletePurchaseWithUndo(id: id)
+      apply(result.data)
+      undoOperation = .purchase(result.deletion)
+      return true
+    } catch {
+      errorMessage = error.localizedDescription
+      return false
+    }
   }
 
   @discardableResult

@@ -2,6 +2,115 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+/// Standalone surfaces share a fill, inset border and clipping shape.
+/// Nested image wells use the same shape system without another border.
+enum AppSurfaceStyle {
+  case card
+  case compact
+  case media
+  case thumbnail
+
+  var shape: RoundedRectangle {
+    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+  }
+
+  private var cornerRadius: CGFloat {
+    switch self {
+    case .card: 18
+    case .compact: 16
+    case .media: 22
+    case .thumbnail: 12
+    }
+  }
+
+  var background: Color {
+    Color(uiColor: self == .thumbnail ? .tertiarySystemGroupedBackground : .secondarySystemGroupedBackground)
+  }
+
+  var showsBorder: Bool { self != .thumbnail }
+}
+
+private struct AppSurfaceModifier: ViewModifier {
+  @Environment(\.colorSchemeContrast) private var contrast
+  @Environment(\.displayScale) private var displayScale
+  let style: AppSurfaceStyle
+
+  func body(content: Content) -> some View {
+    content
+      .background(style.background, in: style.shape)
+      .clipShape(style.shape)
+      .overlay {
+        if style.showsBorder {
+          style.shape.strokeBorder(
+            Color(uiColor: .separator).opacity(contrast == .increased ? 1 : 0.5),
+            lineWidth: contrast == .increased ? 1 : 1 / max(displayScale, 1)
+          )
+          .allowsHitTesting(false)
+        }
+      }
+  }
+}
+
+extension View {
+  func appSurface(_ style: AppSurfaceStyle = .card) -> some View {
+    modifier(AppSurfaceModifier(style: style))
+  }
+}
+
+struct GearPhotoPreview: View {
+  @Environment(\.appReduceMotion) private var reduceMotion
+  @Environment(\.appAccentColor) private var accent
+  let image: UIImage
+  let reference: String?
+  let isProcessing: Bool
+  @State private var original: UIImage?
+  @State private var processed: UIImage?
+  @State private var showsOriginal = false
+
+  var body: some View {
+    VStack(spacing: 12) {
+      ZStack {
+        Image(uiImage: isProcessing ? image : showsOriginal ? (original ?? image) : (processed ?? image))
+          .resizable()
+          .scaledToFit()
+          .padding(12)
+          .id("\(isProcessing)-\(showsOriginal)-\(reference ?? "")")
+          .transition(.opacity)
+          .accessibilityLabel(showsOriginal || processed == nil ? "装备原图" : "装备抠图预览")
+      }
+      .frame(maxWidth: .infinity)
+      .frame(height: 220)
+      .appSurface(.thumbnail)
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: reference)
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: showsOriginal)
+
+      if isProcessing {
+        HStack(spacing: 8) { ProgressView(); Text("正在处理照片") }
+          .font(.subheadline)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .accessibilityElement(children: .combine)
+      } else if processed != nil && original != nil {
+        Picker("查看照片效果", selection: $showsOriginal) {
+          Text("原图").tag(true)
+          Text("抠图").tag(false)
+        }
+        .adaptivePickerStyle()
+        Label("抠图完成", systemImage: "checkmark.circle.fill")
+          .font(.footnote)
+          .foregroundStyle(accent)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
+    }
+    .padding(.vertical, 6)
+    .task(id: reference) {
+      original = GearPhotoProcessor.originalImage(for: reference)
+      processed = GearPhotoProcessor.processedImage(for: reference)
+      showsOriginal = false
+    }
+  }
+}
+
 /// Shared submission and draft protection for modal editors.
 private struct EditorActions: ViewModifier {
   @Environment(\.dismiss) private var dismiss
@@ -12,6 +121,7 @@ private struct EditorActions: ViewModifier {
   let draft: [String]
   let ready: Bool
   let draftKey: String?
+  let onSaved: (() -> Void)?
   let save: () async -> Bool
   @State private var baseline: [String]?
   @State private var isSaving = false
@@ -49,9 +159,14 @@ private struct EditorActions: ViewModifier {
               isSaving = false
               if saved {
                 if let draftKey { PurchaseDraftStore.remove(key: draftKey) }
-                UIAccessibility.post(notification: .announcement, argument: AppLanguage.text("已保存"))
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                dismiss()
+                if let onSaved {
+                  UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                  onSaved()
+                } else {
+                  UIAccessibility.post(notification: .announcement, argument: AppLanguage.text("已保存"))
+                  dismiss()
+                }
               }
               else { failure = session.errorMessage ?? "未能保存，请重试。你的输入仍然保留。" }
             }
@@ -93,8 +208,9 @@ extension View {
   }
 
   func editorActions(title: String = "保存", isValid: Bool = true, isBusy: Bool = false,
-                     draft: [String], ready: Bool = true, draftKey: String? = nil, save: @escaping () async -> Bool) -> some View {
-    modifier(EditorActions(title: title, isValid: isValid, isBusy: isBusy, draft: draft, ready: ready, draftKey: draftKey, save: save))
+                     draft: [String], ready: Bool = true, draftKey: String? = nil,
+                     onSaved: (() -> Void)? = nil, save: @escaping () async -> Bool) -> some View {
+    modifier(EditorActions(title: title, isValid: isValid, isBusy: isBusy, draft: draft, ready: ready, draftKey: draftKey, onSaved: onSaved, save: save))
   }
 }
 
@@ -124,6 +240,7 @@ struct LabeledInput: View {
 }
 
 struct PageHeader: View {
+  @Environment(\.appAccentColor) private var accent
   let title: String
   let subtitle: String?
   let systemImage: String
@@ -132,9 +249,9 @@ struct PageHeader: View {
     HStack(alignment: .center, spacing: 14) {
       Image(systemName: systemImage)
         .font(.title3.weight(.semibold))
-        .foregroundStyle(.teal)
+        .foregroundStyle(accent)
         .frame(width: 42, height: 42)
-        .background(.teal.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
       VStack(alignment: .leading, spacing: 3) {
         Text(LocalizedStringKey(title))
@@ -175,16 +292,13 @@ struct MetricCard: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(16)
-    .background(.background, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .stroke(.quaternary, lineWidth: 1)
-    )
+    .appSurface(.compact)
     .accessibilityElement(children: .combine)
   }
 }
 
 enum SemanticTint {
+  static let accent = Color.blue
   static let active = Color(uiColor: .systemGreen)
   static let consumed = Color.secondary
   static let stored = Color(uiColor: .systemOrange)
@@ -265,7 +379,7 @@ struct EmptyStateView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(28)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .appSurface()
   }
 }
 
@@ -285,7 +399,7 @@ struct LoadingStateView: View {
     }
     .frame(maxWidth: .infinity)
     .padding(28)
-    .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    .appSurface()
   }
 }
 
@@ -296,23 +410,29 @@ struct RemoteImageView: View {
   var imageKey: String? = nil
   var coverImageUrl: String? = nil
   var categoryName: String? = nil
+  var surfaceStyle: AppSurfaceStyle = .thumbnail
+  @State private var loadedImage: UIImage?
+  @State private var loadedRequest: GearImageRequest?
+  @State private var completedRequest: GearImageRequest?
+
+  private var request: GearImageRequest {
+    GearImageRequest(imageKey: imageKey, coverImageUrl: coverImageUrl ?? url?.absoluteString,
+      categoryName: categoryName, maxPixelSize: surfaceStyle == .media ? 1536 : 512,
+      normalizeForPegboard: categoryName?.contains("球拍") == true)
+  }
 
   var body: some View {
     ZStack {
-      RoundedRectangle(cornerRadius: 16, style: .continuous)
-        .fill(Color(.secondarySystemGroupedBackground))
+      Color.clear
 
-      if let normalizedImage = normalizedLocalImage {
-        Image(uiImage: normalizedImage)
+      if let image = GearImageLoader.cachedImage(for: request) ?? (loadedRequest == request ? loadedImage : nil) {
+        Image(uiImage: image)
           .resizable()
           .scaledToFit()
           .padding(6)
-      } else if let localImage = GearImageResolver.localImage(imageKey: imageKey, coverImageUrl: coverImageUrl) {
-        Image(uiImage: localImage)
-          .resizable()
-          .scaledToFit()
-          .padding(6)
-      } else if let url {
+      } else if completedRequest != request {
+        ProgressView().scaleEffect(0.75)
+      } else if let url, !url.isFileURL, ["https", "http"].contains(url.scheme ?? "") {
         AsyncImage(url: url, transaction: Transaction(animation: reduceMotion ? nil : .easeInOut)) { phase in
           switch phase {
           case .empty:
@@ -336,8 +456,16 @@ struct RemoteImageView: View {
           .foregroundStyle(.secondary)
       }
     }
-    .clipped()
+    .appSurface(surfaceStyle)
     .accessibilityHidden(true)
+    .task(id: request) {
+      let requested = request
+      let image = await GearImageLoader.image(for: requested)
+      guard !Task.isCancelled else { return }
+      loadedImage = image
+      loadedRequest = requested
+      completedRequest = requested
+    }
   }
 
   private var placeholderSymbol: String {
@@ -347,18 +475,6 @@ struct RemoteImageView: View {
     return systemImage
   }
 
-  private var normalizedLocalImage: UIImage? {
-    guard let categoryName,
-          categoryName.contains("球拍") else {
-      return nil
-    }
-
-    return GearImageResolver.pegboardImage(
-      imageKey: imageKey,
-      coverImageUrl: coverImageUrl,
-      categoryName: categoryName
-    )
-  }
 }
 
 struct ErrorBanner: View {
@@ -400,19 +516,14 @@ func money(_ value: Double?) -> String {
 }
 
 func shortDate(_ rawValue: String) -> String {
-  let formatter = ISO8601DateFormatter()
-  formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-  if let date = formatter.date(from: rawValue) {
-    return date.formatted(.dateTime.year().month().day().locale(AppLanguage.locale))
-  }
-  formatter.formatOptions = [.withInternetDateTime]
-  if let date = formatter.date(from: rawValue) {
+  if let date = AppDate.parseISODate(rawValue) {
     return date.formatted(.dateTime.year().month().day().locale(AppLanguage.locale))
   }
   return rawValue
 }
 
 struct AppSettingsView: View {
+  @AppStorage(AppIconChoice.preferenceKey) private var iconRawValue = AppIconChoice.current.rawValue
   @AppStorage("app.language") private var language = "system"
   @AppStorage("backup.lastExport") private var lastExport: Double = 0
   @Environment(AppSession.self) private var session
@@ -501,6 +612,7 @@ struct AppSettingsView: View {
           showingResetConfirmation = true
         } label: {
           Label("清空本地数据", systemImage: "trash")
+            .foregroundStyle(SemanticTint.destructive)
         }
       } footer: {
         Text("清空不会删除已导出的备份或恢复点。")
@@ -518,6 +630,8 @@ struct AppSettingsView: View {
       case .success:
         lastExport = Date().timeIntervalSince1970
         backupMessage = "备份已导出。"
+      case .failure(let error) where (error as NSError).domain == NSCocoaErrorDomain && (error as NSError).code == CocoaError.userCancelled.rawValue:
+        break
       case .failure(let error):
         backupMessage = error.localizedDescription
       }
@@ -528,7 +642,7 @@ struct AppSettingsView: View {
     .sheet(item: $pendingBackup, onDismiss: {
       hasRecovery = FileManager.default.fileExists(atPath: AppSession.recoveryBackupURL.path)
     }) { backup in
-      BackupRestorePreview(backup: backup)
+      BackupRestorePreview(backup: backup) { backupMessage = AppLanguage.text("备份已恢复。") }
     }
     .confirmationDialog("清空这台设备上的全部数据？", isPresented: $showingResetConfirmation, titleVisibility: .visible) {
       Button("清空全部数据", role: .destructive) {
@@ -551,7 +665,7 @@ struct AppSettingsView: View {
   }
 
   private var currentIcon: AppIconChoice {
-    AppIconChoice.allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .blue
+    AppIconChoice(rawValue: iconRawValue) ?? .blue
   }
 
   private func exportBackup() {
@@ -569,7 +683,7 @@ struct AppSettingsView: View {
       let url = try result.get()
       let didAccess = url.startAccessingSecurityScopedResource()
       defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-      if url.hasDirectoryPath {
+      if try url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true {
         pendingBackup = try LocalDataStore.prepareBackup(package: FileWrapper(url: url, options: .immediate))
       } else {
         pendingBackup = try LocalDataStore.prepareBackup(data: Data(contentsOf: url),
@@ -585,6 +699,7 @@ struct AppSettingsView: View {
 private struct BackupRestorePreview: View {
   @Environment(AppSession.self) private var session
   let backup: PreparedBackup
+  let onRestored: () -> Void
 
   var body: some View {
     NavigationStack {
@@ -610,7 +725,9 @@ private struct BackupRestorePreview: View {
       .navigationTitle("恢复备份")
       .navigationBarTitleDisplayMode(.inline)
       .editorActions(title: "替换并恢复", draft: []) {
-        await session.restorePreparedBackup(backup)
+        let restored = await session.restorePreparedBackup(backup)
+        if restored { onRestored() }
+        return restored
       }
     }
   }
@@ -639,7 +756,7 @@ private extension UTType {
 }
 
 private struct AppIconSettingsView: View {
-  @State private var selectedIconName = UIApplication.shared.alternateIconName
+  @AppStorage(AppIconChoice.preferenceKey) private var iconRawValue = AppIconChoice.current.rawValue
   @State private var isChangingIcon = false
   @State private var iconErrorMessage: String?
 
@@ -655,11 +772,7 @@ private struct AppIconSettingsView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 52, height: 52)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                  RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-                )
+                .clipShape(AppSurfaceStyle.thumbnail.shape)
 
               VStack(alignment: .leading, spacing: 3) {
                 Text(LocalizedStringKey(choice.title))
@@ -672,20 +785,24 @@ private struct AppIconSettingsView: View {
 
               Spacer(minLength: 0)
 
-              if selectedIconName == choice.alternateIconName {
+              if iconRawValue == choice.rawValue {
                 Image(systemName: "checkmark.circle.fill")
-                  .foregroundStyle(.blue)
+                  .foregroundStyle(.tint)
               }
             }
             .contentShape(Rectangle())
           }
           .buttonStyle(.plain)
           .disabled(isChangingIcon)
+          .accessibilityAddTraits(iconRawValue == choice.rawValue ? .isSelected : [])
         }
       } footer: {
-        if let iconErrorMessage {
-          Text(iconErrorMessage)
-            .foregroundStyle(.red)
+        VStack(alignment: .leading, spacing: 6) {
+          Text("强调色会随图标一起切换，银色图标使用经典蓝。")
+          if let iconErrorMessage {
+            Text(iconErrorMessage)
+              .foregroundStyle(.red)
+          }
         }
       }
     }
@@ -694,12 +811,14 @@ private struct AppIconSettingsView: View {
   }
 
   private func applyIcon(_ choice: AppIconChoice) {
+    guard !isChangingIcon else { return }
     guard UIApplication.shared.supportsAlternateIcons else {
       iconErrorMessage = "当前设备暂不支持更换 App 图标。"
       return
     }
 
-    guard selectedIconName != choice.alternateIconName else {
+    guard AppIconChoice.current != choice else {
+      iconRawValue = choice.rawValue
       return
     }
 
@@ -709,7 +828,7 @@ private struct AppIconSettingsView: View {
       DispatchQueue.main.async {
         isChangingIcon = false
         if error == nil {
-          selectedIconName = choice.alternateIconName
+          iconRawValue = AppIconChoice.current.rawValue
         } else {
           iconErrorMessage = "图标暂时无法更换，请稍后再试。"
         }
@@ -718,7 +837,7 @@ private struct AppIconSettingsView: View {
   }
 }
 
-private enum AppIconChoice: String, CaseIterable, Identifiable {
+enum AppIconChoice: String, CaseIterable, Identifiable {
   case blue
   case green
   case victorBlue
@@ -729,6 +848,33 @@ private enum AppIconChoice: String, CaseIterable, Identifiable {
   case aqua
 
   var id: String { rawValue }
+
+  static let preferenceKey = "app.iconChoice"
+
+  @MainActor
+  static var current: AppIconChoice {
+    allCases.first { $0.alternateIconName == UIApplication.shared.alternateIconName } ?? .blue
+  }
+
+  var accentColor: Color {
+    switch self {
+    case .blue, .silver: SemanticTint.accent
+    case .green: adaptiveAccent(light: 0x00834A, dark: 0x36C780)
+    case .victorBlue: adaptiveAccent(light: 0x2458A6, dark: 0x79A8FA)
+    case .red: adaptiveAccent(light: 0xC7353E, dark: 0xFF7C84)
+    case .orange: adaptiveAccent(light: 0xBC4F0D, dark: 0xFFAA61)
+    case .purple: adaptiveAccent(light: 0x7651BC, dark: 0xB99AF1)
+    case .aqua: adaptiveAccent(light: 0x087C86, dark: 0x5CCBD1)
+    }
+  }
+
+  private func adaptiveAccent(light: UInt32, dark: UInt32) -> Color {
+    Color(uiColor: UIColor { traits in
+      let rgb = traits.userInterfaceStyle == .dark ? dark : light
+      return UIColor(red: CGFloat((rgb >> 16) & 0xFF) / 255,
+        green: CGFloat((rgb >> 8) & 0xFF) / 255, blue: CGFloat(rgb & 0xFF) / 255, alpha: 1)
+    })
+  }
 
   var title: String {
     switch self {

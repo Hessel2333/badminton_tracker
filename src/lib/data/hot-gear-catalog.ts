@@ -28,7 +28,7 @@ export const HOT_GEAR_CATALOG: HotGearSeed[] = [
   { name: "VICTOR 大铁锤", brandName: "VICTOR", modelCode: "TK-HMR", categoryName: "球拍", suggestedUnitPriceCny: 799, popularity: 84, imageUrl: "/gear-images/cutout/victor_racket_thruster_hammer_cutout_01.png", tags: ["重杀", "进攻"] },
   { name: "ASTROX 100ZZ", brandName: "YONEX", modelCode: "AX100ZZ", categoryName: "球拍", suggestedUnitPriceCny: 1680, popularity: 95, tags: ["头重", "进攻"] },
   { name: "ASTROX 88D PRO", brandName: "YONEX", modelCode: "AX88D PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 90, tags: ["双打后场"] },
-  { name: "NANOFLARE 1000Z", brandName: "YONEX", modelCode: "NF1000Z", categoryName: "球拍", suggestedUnitPriceCny: 1690, popularity: 85, tags: ["速度", "平抽"] },
+  { name: "疾光 1000Z", brandName: "YONEX", modelCode: "NF1000Z", categoryName: "球拍", suggestedUnitPriceCny: 1690, popularity: 85, tags: ["NANOFLARE", "速度", "平抽"] },
   { name: "风刃 900", brandName: "李宁", modelCode: "Windstorm 900", categoryName: "球拍", suggestedUnitPriceCny: 1099, popularity: 79, tags: ["轻量", "控速"] },
   { name: "雷霆 90 龙", brandName: "李宁", modelCode: "3D Calibar 900", categoryName: "球拍", suggestedUnitPriceCny: 1299, popularity: 76, tags: ["进攻"] },
   { name: "TK-F C", brandName: "VICTOR", modelCode: "TK-F C", categoryName: "球拍", suggestedUnitPriceCny: 1390, popularity: 82, tags: ["爆发", "进攻"] },

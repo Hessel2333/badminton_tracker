@@ -1,0 +1,115 @@
+{
+  "notes": "原图导入；不根据文件名猜测代际、货号或价格。抠图处理状态另行记录。",
+  "items": [
+    {
+      "source": "88spro.png.webp",
+      "id": "cdbaa05f-5b56-4fed-b97d-38b57710058b",
+      "name": "天斧 88S Pro",
+      "imageKey": "yonex_racket_astrox88spro_main_01",
+      "fileName": "yonex_racket_astrox88spro_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_astrox88spro_main_01.png",
+      "rotationDegrees": -0.129,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "战戟9000power.jpg",
+      "id": "d98cb25b-6ef9-4d6c-804d-bffc21c35402",
+      "name": "战戟 9000 Power",
+      "imageKey": "lining_racket_zhanji9000power_main_01",
+      "fileName": "lining_racket_zhanji9000power_main_01.jpg",
+      "existing": false,
+      "processedFileName": "lining_racket_zhanji9000power_main_01.png",
+      "rotationDegrees": -44.728,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "astrox100zz.webp",
+      "id": "56dd2b4f-20f6-5f78-8b5f-c86d7dd8abf2",
+      "name": "天斧 100ZZ",
+      "imageKey": "yonex_racket_astrox100zz_main_01",
+      "fileName": "yonex_racket_astrox100zz_main_01.webp",
+      "existing": true,
+      "processedFileName": "yonex_racket_astrox100zz_main_01.png",
+      "rotationDegrees": 0.233,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "ax99-pro_whitetiger.png.webp",
+      "id": "b4f9e9dc-56a8-46e0-af55-1190c33a9c57",
+      "name": "天斧 99 Pro (白虎)",
+      "imageKey": "yonex_racket_astrox99pro_whitetiger_main_01",
+      "fileName": "yonex_racket_astrox99pro_whitetiger_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_astrox99pro_whitetiger_main_01.png",
+      "rotationDegrees": -0.018,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "ax99pro-2.png.webp",
+      "id": "b56be592-b713-410c-971f-ab702c850a2c",
+      "name": "天斧 99 Pro (绿)",
+      "imageKey": "yonex_racket_astrox99pro_green_main_01",
+      "fileName": "yonex_racket_astrox99pro_green_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_astrox99pro_green_main_01.png",
+      "rotationDegrees": -0.194,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "ax100zzva.webp",
+      "id": "92670994-669c-4487-8d3d-ea94776a0774",
+      "name": "天斧 100ZZ (VA)",
+      "imageKey": "yonex_racket_astrox100zzva_main_01",
+      "fileName": "yonex_racket_astrox100zzva_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_astrox100zzva_main_01.png",
+      "rotationDegrees": 0.318,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "nanoflare_1000_z.png.webp",
+      "id": "d481e92e-034c-4744-a23a-52218628458b",
+      "name": "NANOFLARE 1000Z",
+      "imageKey": "yonex_racket_nanoflare1000z_main_01",
+      "fileName": "yonex_racket_nanoflare1000z_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_nanoflare1000z_main_01.png",
+      "rotationDegrees": 0.023,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "nf-700p.png.webp",
+      "id": "19a35600-f52e-4add-89dd-e2d0405ff203",
+      "name": "NANOFLARE 700 Pro",
+      "imageKey": "yonex_racket_nanoflare700pro_main_01",
+      "fileName": "yonex_racket_nanoflare700pro_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_nanoflare700pro_main_01.png",
+      "rotationDegrees": -0.167,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "nf-800p.png.webp",
+      "id": "5ae7500d-abf6-40ec-a7b4-9f495938517c",
+      "name": "NANOFLARE 800 Pro",
+      "imageKey": "yonex_racket_nanoflare800pro_main_01",
+      "fileName": "yonex_racket_nanoflare800pro_main_01.webp",
+      "existing": false,
+      "processedFileName": "yonex_racket_nanoflare800pro_main_01.png",
+      "rotationDegrees": 0.162,
+      "processing": "existing-geometry-and-light-background-mask"
+    },
+    {
+      "source": "yonex-AS-05.jpg",
+      "id": "18b57912-6199-5480-ad8e-0988adceef31",
+      "name": "YONEX AS-05",
+      "imageKey": "yonex_shuttlecock_as05_main_01",
+      "fileName": "yonex_shuttlecock_as05_main_01.jpg",
+      "existing": true,
+      "processedFileName": "yonex_shuttlecock_as05_main_01.png",
+      "rotationDegrees": 0,
+      "processing": "existing-geometry-and-light-background-mask"
+    }
+  ]
+}

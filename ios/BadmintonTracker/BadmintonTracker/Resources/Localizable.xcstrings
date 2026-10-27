@@ -1,6 +1,460 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "备份已恢复。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Backup restored." } }
+      }
+    },
+    "正在整理洞洞板": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": { "state": "translated", "value": "Preparing pegboard" }
+        }
+      }
+    },
+    "部分照片无法读取，备份未导出。请重新选择照片后再试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some photos could not be read. Select the photos again, then try exporting the backup."
+          }
+        }
+      }
+    },
+    "再买一次": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buy Again"
+          }
+        }
+      }
+    },
+    "再次入手": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buying Again"
+          }
+        }
+      }
+    },
+    "仅剩1筒": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 left"
+          }
+        }
+      }
+    },
+    "更多操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More Actions"
+          }
+        }
+      }
+    },
+    "已带入上次单价，请按本次实付金额确认。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your previous unit price is filled in. Confirm the price you paid this time."
+          }
+        }
+      }
+    },
+    "查看装备": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Gear"
+          }
+        }
+      }
+    },
+    "购买记录已删除": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase deleted"
+          }
+        }
+      }
+    },
+    "装备原图": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original gear photo"
+          }
+        }
+      }
+    },
+    "装备抠图预览": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gear cutout preview"
+          }
+        }
+      }
+    },
+    "查看照片效果": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare Photos"
+          }
+        }
+      }
+    },
+    "原图": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original"
+          }
+        }
+      }
+    },
+    "抠图": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cutout"
+          }
+        }
+      }
+    },
+    "抠图完成": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cutout ready"
+          }
+        }
+      }
+    },
+    "未识别到清晰主体，已保留原图。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No clear subject found. Your original photo has been kept."
+          }
+        }
+      }
+    },
+    "照片处理失败，请重新选择。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t process this photo. Please choose it again."
+          }
+        }
+      }
+    },
+    "这是这件装备的最后一笔购买，删除后将一并移除装备档案。删除后可短暂撤销。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is the last purchase for this gear. Its gear profile will also be removed. You can undo briefly after deleting."
+          }
+        }
+      }
+    },
+    "这笔购买及其消耗记录会被删除，库存与支出将同步更新。删除后可短暂撤销。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This purchase and its usage history will be deleted. Stock and spending will update. You can undo briefly after deleting."
+          }
+        }
+      }
+    },
+    "强调色会随图标一起切换，银色图标使用经典蓝。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accent colors follow your app icon. The silver icon uses classic blue."
+          }
+        }
+      }
+    },
+    "第一件装备，\n新的开始。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your first gear.\nA new beginning."
+          }
+        }
+      }
+    },
+    "新装备，\n新期待。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New gear.\nNew possibilities."
+          }
+        }
+      }
+    },
+    "再次入手，\n热爱继续。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another purchase.\nThe passion goes on."
+          }
+        }
+      }
+    },
+    "心愿实现，\n快乐加倍。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A wish fulfilled.\nMore joy ahead."
+          }
+        }
+      }
+    },
+    "入手成功" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It’s yours"
+          }
+        }
+      }
+    },
+    "太棒了" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Love it"
+          }
+        }
+      }
+    },
+    "删除这条购买记录" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this purchase"
+          }
+        }
+      }
+    },
+    "删除这条购买记录？" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete this purchase?"
+          }
+        }
+      }
+    },
+    "正在删除" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleting"
+          }
+        }
+      }
+    },
+    "删除记录" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete record"
+          }
+        }
+      }
+    },
+    "未能删除，请重试。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not delete. Please try again."
+          }
+        }
+      }
+    },
+    "这笔购买及其消耗记录会被删除，库存与支出将同步更新。此操作无法撤销。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This purchase and its usage records will be deleted. Your inventory and spending will be updated. This cannot be undone."
+          }
+        }
+      }
+    },
+    "这是这件装备的最后一笔购买。删除后，装备档案、穿线记录及本笔消耗记录会一并移除，库存与支出将同步更新。此操作无法撤销。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the last purchase for this gear. Its gear profile, stringing history and usage records will also be removed. Your inventory and spending will be updated. This cannot be undone."
+          }
+        }
+      }
+    },
+    "恭喜，拥有第一件装备！" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Congratulations on your first gear!"
+          }
+        }
+      }
+    },
+    "恭喜，新装备入列！" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New gear, new possibilities!"
+          }
+        }
+      }
+    },
+    "入手成功！" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It’s yours!"
+          }
+        }
+      }
+    },
+    "恭喜，心愿实现！" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A wish come true!"
+          }
+        }
+      }
+    },
+    "从这里开始，留下你的羽球足迹。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your badminton story starts here."
+          }
+        }
+      }
+    },
+    "装备已加入清单，期待下一次上场。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to your collection. See you on the court."
+          }
+        }
+      }
+    },
+    "这次购买已记下，热爱继续。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase saved. Keep the passion going."
+          }
+        }
+      }
+    },
+    "从想要到拥有，值得开心一下。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your wishlist to your collection. Enjoy the moment."
+          }
+        }
+      }
+    },
     "%@ · %@" : {
       "localizations" : {
         "zh-Hans" : {

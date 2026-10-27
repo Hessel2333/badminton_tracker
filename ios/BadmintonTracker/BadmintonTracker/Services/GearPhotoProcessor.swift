@@ -25,6 +25,8 @@ enum GearPhotoProcessor {
     try await Task.detached(priority: .userInitiated) {
       let mediaID = UUID()
       let folderURL = try mediaStorage.makeAssetDirectory(id: mediaID)
+      var completed = false
+      defer { if !completed { try? mediaStorage.removeAsset(id: mediaID) } }
       let original = image.normalizedForStorage(maxPixel: 3000)
       let normalized = image.normalizedForStorage(maxPixel: 1800)
       let originalURL = folderURL.appending(path: "original.jpg")
@@ -41,6 +43,7 @@ enum GearPhotoProcessor {
          let pngData = cutout.pngData() {
         try pngData.write(to: cutoutURL, options: [.atomic])
         try writeThumbnail(from: cutout, to: thumbnailURL)
+        completed = true
         return GearPhotoResult(
           mediaID: mediaID,
           originalURL: originalURL,
@@ -50,6 +53,7 @@ enum GearPhotoProcessor {
       }
 
       try writeThumbnail(from: normalized, to: thumbnailURL)
+      completed = true
       return GearPhotoResult(
         mediaID: mediaID,
         originalURL: originalURL,
@@ -78,6 +82,46 @@ enum GearPhotoProcessor {
 
   static func deleteMedia(id: UUID) throws {
     try mediaStorage.removeAsset(id: id)
+  }
+
+  static func originalImage(for reference: String?) -> UIImage? {
+    guard let reference, let path = mediaFiles(for: reference)?.originalRelativePath,
+          let url = mediaStorage.fileURL(forRelativePath: path) else { return nil }
+    return UIImage(contentsOfFile: url.path)
+  }
+
+  static func processedImage(for reference: String?) -> UIImage? {
+    guard let reference, let path = mediaFiles(for: reference)?.processedRelativePath,
+          let url = mediaStorage.fileURL(forRelativePath: path) else { return nil }
+    return UIImage(contentsOfFile: url.path)
+  }
+
+  static func archiveMedia(for reference: String?) throws -> [String: Data] {
+    guard let reference, let files = mediaFiles(for: reference) else { return [:] }
+    var archive: [String: Data] = [:]
+    for path in [files.originalRelativePath, files.processedRelativePath, files.thumbnailRelativePath].compactMap({ $0 }) {
+      if let url = mediaStorage.fileURL(forRelativePath: path) { archive[path] = try Data(contentsOf: url) }
+    }
+    return archive
+  }
+
+  /// Returns only newly created files, so a failed transaction can remove them safely.
+  static func restoreMedia(_ archive: [String: Data]) throws -> [URL] {
+    var restored: [URL] = []
+    do {
+      for (path, data) in archive {
+        guard let url = mediaStorage.fileURL(forRelativePath: path),
+              !FileManager.default.fileExists(atPath: url.path) else { continue }
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: url, options: .atomic)
+        restored.append(url)
+      }
+      return restored
+    } catch { removeRestoredFiles(restored); throw error }
+  }
+
+  static func removeRestoredFiles(_ urls: [URL]) {
+    for url in urls { try? FileManager.default.removeItem(at: url) }
   }
 
   private static func foregroundCutout(from image: UIImage, categoryName: String?) throws -> UIImage {

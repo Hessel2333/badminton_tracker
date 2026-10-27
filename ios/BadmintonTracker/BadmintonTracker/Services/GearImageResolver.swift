@@ -2,6 +2,75 @@ import Foundation
 import UIKit
 import ImageIO
 
+struct GearImageRequest: Hashable, Sendable {
+  let imageKey: String?
+  let coverImageUrl: String?
+  let categoryName: String?
+  var maxPixelSize = 512
+  var normalizeForPegboard = false
+
+  fileprivate var cacheKey: NSString {
+    [imageKey ?? "", coverImageUrl ?? "", categoryName ?? "", String(maxPixelSize), String(normalizeForPegboard)]
+      .joined(separator: "|") as NSString
+  }
+}
+
+/// Serial preparation bounds image memory and keeps decoding and pixel scans off the UI thread.
+enum GearImageLoader {
+  private static let queue = DispatchQueue(label: "com.tian.BadmintonTracker.image-preparation", qos: .userInitiated)
+  nonisolated(unsafe) private static let cache: NSCache<NSString, PreparedGearImage> = {
+    let cache = NSCache<NSString, PreparedGearImage>()
+    cache.totalCostLimit = 48 * 1024 * 1024
+    cache.countLimit = 150
+    return cache
+  }()
+
+  static func cachedImage(for request: GearImageRequest) -> UIImage? {
+    cache.object(forKey: request.cacheKey)?.image
+  }
+
+  static func image(for request: GearImageRequest) async -> UIImage? {
+    await asset(for: request).image
+  }
+
+  static func asset(for request: GearImageRequest) async -> PreparedGearImage {
+    if let prepared = cache.object(forKey: request.cacheKey) { return prepared }
+    let prepared: PreparedGearImage = await withCheckedContinuation { continuation in
+      queue.async {
+        if let prepared = cache.object(forKey: request.cacheKey) {
+          continuation.resume(returning: prepared)
+          return
+        }
+        let prepared: PreparedGearImage = autoreleasepool {
+          if request.normalizeForPegboard, request.categoryName?.contains("羽毛球") == true {
+            let asset = GearImageResolver.shuttleAsset(imageKey: request.imageKey, coverImageUrl: request.coverImageUrl)
+            return PreparedGearImage(image: asset?.image, shuttleGeometry: asset?.geometry)
+          }
+          if request.normalizeForPegboard {
+            return PreparedGearImage(image: GearImageResolver.pegboardImage(imageKey: request.imageKey, coverImageUrl: request.coverImageUrl,
+              categoryName: request.categoryName ?? "", maxPixelSize: request.maxPixelSize))
+          }
+          return PreparedGearImage(image: GearImageResolver.localImage(imageKey: request.imageKey, coverImageUrl: request.coverImageUrl,
+            maxPixelSize: request.maxPixelSize))
+        }
+        let image = prepared.image
+        cache.setObject(prepared, forKey: request.cacheKey, cost: (image?.cgImage?.bytesPerRow ?? 0) * (image?.cgImage?.height ?? 0))
+        continuation.resume(returning: prepared)
+      }
+    }
+    return prepared
+  }
+}
+
+final class PreparedGearImage: NSObject, @unchecked Sendable {
+  let image: UIImage?
+  let shuttleGeometry: ShuttleTubeGeometry?
+  init(image: UIImage?, shuttleGeometry: ShuttleTubeGeometry? = nil) {
+    self.image = image
+    self.shuttleGeometry = shuttleGeometry
+  }
+}
+
 struct GearImageResolver {
   nonisolated(unsafe) private static let localImageCache: NSCache<NSString, UIImage> = {
     let cache = NSCache<NSString, UIImage>()
@@ -9,9 +78,19 @@ struct GearImageResolver {
     cache.countLimit = 100
     return cache
   }()
-  nonisolated(unsafe) private static let pegboardImageCache = NSCache<NSString, UIImage>()
+  nonisolated(unsafe) private static let pegboardImageCache: NSCache<NSString, UIImage> = {
+    let cache = NSCache<NSString, UIImage>()
+    cache.totalCostLimit = 48 * 1024 * 1024
+    cache.countLimit = 100
+    return cache
+  }()
 
-  nonisolated(unsafe) private static let shuttleCache = NSCache<NSString, ShuttlePegboardAsset>()
+  nonisolated(unsafe) private static let shuttleCache: NSCache<NSString, ShuttlePegboardAsset> = {
+    let cache = NSCache<NSString, ShuttlePegboardAsset>()
+    cache.totalCostLimit = 24 * 1024 * 1024
+    cache.countLimit = 60
+    return cache
+  }()
 
   static func localImageURL(imageKey: String?, coverImageUrl: String?) -> URL? {
     let manifest = GearImageManifest.shared
@@ -30,11 +109,11 @@ struct GearImageResolver {
     return nil
   }
 
-  static func localImage(imageKey: String?, coverImageUrl: String?) -> UIImage? {
+  static func localImage(imageKey: String?, coverImageUrl: String?, maxPixelSize: Int = 2048) -> UIImage? {
     guard let url = localImageURL(imageKey: imageKey, coverImageUrl: coverImageUrl) else {
       return nil
     }
-    let cacheKey = url.absoluteString as NSString
+    let cacheKey = "\(url.absoluteString)|\(maxPixelSize)" as NSString
     if let cached = localImageCache.object(forKey: cacheKey) {
       return cached
     }
@@ -42,7 +121,7 @@ struct GearImageResolver {
           let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 2048,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
             kCGImageSourceShouldCacheImmediately: true
           ] as CFDictionary) else { return nil }
     let image = UIImage(cgImage: thumbnail)
@@ -55,27 +134,26 @@ struct GearImageResolver {
       ?? absoluteURL(for: coverImageUrl)
   }
 
-  static func pegboardImage(imageKey: String?, coverImageUrl: String?, categoryName: String) -> UIImage? {
+  static func pegboardImage(imageKey: String?, coverImageUrl: String?, categoryName: String, maxPixelSize: Int = 1024) -> UIImage? {
     if categoryName.contains("羽毛球") {
       return shuttleAsset(imageKey: imageKey, coverImageUrl: coverImageUrl)?.image
     }
-    guard categoryName.contains("球拍"),
-          let image = localImage(imageKey: imageKey, coverImageUrl: coverImageUrl) else {
-      return nil
+    guard categoryName.contains("球拍") else {
+      return localImage(imageKey: imageKey, coverImageUrl: coverImageUrl, maxPixelSize: maxPixelSize)
     }
 
     let cacheKey = [
       categoryName,
       imageKey ?? "",
       coverImageUrl ?? "",
-      "\(Int(image.size.width))x\(Int(image.size.height))"
+      String(maxPixelSize)
     ].joined(separator: "|") as NSString
     if let cached = pegboardImageCache.object(forKey: cacheKey) {
       return cached
     }
-
+    guard let image = localImage(imageKey: imageKey, coverImageUrl: coverImageUrl, maxPixelSize: maxPixelSize) else { return nil }
     let resolved = normalizedRacketImage(image) ?? image
-    pegboardImageCache.setObject(resolved, forKey: cacheKey)
+    pegboardImageCache.setObject(resolved, forKey: cacheKey, cost: (resolved.cgImage?.bytesPerRow ?? 0) * (resolved.cgImage?.height ?? 0))
     return resolved
   }
 
@@ -83,7 +161,7 @@ struct GearImageResolver {
     guard let url = localImageURL(imageKey: imageKey, coverImageUrl: coverImageUrl) else { return nil }
     let key = url.absoluteString as NSString
     if let cached = shuttleCache.object(forKey: key) { return cached }
-    guard let original = localImage(imageKey: imageKey, coverImageUrl: coverImageUrl) else { return nil }
+    guard let original = localImage(imageKey: imageKey, coverImageUrl: coverImageUrl, maxPixelSize: 1024) else { return nil }
     var image = original
     var geometry: ShuttleTubeGeometry?
     if let cgImage = original.cgImage, let measured = ShuttleTubeGeometry.measure(cgImage),
@@ -92,7 +170,7 @@ struct GearImageResolver {
       geometry = measured
     }
     let asset = ShuttlePegboardAsset(image: image, geometry: geometry)
-    shuttleCache.setObject(asset, forKey: key)
+    shuttleCache.setObject(asset, forKey: key, cost: (image.cgImage?.bytesPerRow ?? 0) * (image.cgImage?.height ?? 0))
     return asset
   }
 
@@ -156,6 +234,10 @@ struct GearImageResolver {
   private static func transparentCutout(from image: UIImage) -> UIImage? {
     guard let rendered = rgbaPixels(from: image) else { return nil }
     var pixels = rendered.pixels
+    // Prepared cutouts already have transparent backgrounds. Preserve white paint and grips.
+    if stride(from: 3, to: pixels.count, by: 4).contains(where: { pixels[$0] == 0 }) {
+      return image
+    }
 
     var index = 0
     while index < pixels.count {

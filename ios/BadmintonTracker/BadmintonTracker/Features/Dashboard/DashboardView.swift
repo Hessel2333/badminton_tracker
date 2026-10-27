@@ -68,7 +68,7 @@ struct DashboardView: View {
           }
         }
         .padding()
-        .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .appSurface()
         .padding(.horizontal)
         }
       }

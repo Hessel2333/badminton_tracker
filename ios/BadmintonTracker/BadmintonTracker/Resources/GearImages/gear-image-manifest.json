@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 5,
   "images": {
     "bonny_racket_ft152_main_01": "bonny_racket_ft152_main_01.png",
     "chao_shuttlecock_chengchao_cutout_01": "chao_shuttlecock_chengchao_cutout_01.png",
@@ -81,6 +81,15 @@
     "yonex_racket_astrox88dpro_main_01": "yonex_racket_astrox88dpro_main_01.png",
     "yonex_shuttlecock_as05_main_01": "yonex_shuttlecock_as05_main_01.png",
     "yonex_shuttlecock_as50_cutout_01": "yonex_shuttlecock_as50_cutout_01.png",
-    "yonex_shuttlecock_as50_main_01": "yonex_shuttlecock_as50_cutout_01.png"
+    "yonex_shuttlecock_as50_main_01": "yonex_shuttlecock_as50_cutout_01.png",
+    "yonex_racket_astrox88spro_main_01": "yonex_racket_astrox88spro_main_01.png",
+    "lining_racket_zhanji9000power_main_01": "lining_racket_zhanji9000power_main_01.png",
+    "yonex_racket_astrox100zz_main_01": "yonex_racket_astrox100zz_main_01.png",
+    "yonex_racket_astrox99pro_whitetiger_main_01": "yonex_racket_astrox99pro_whitetiger_main_01.png",
+    "yonex_racket_astrox99pro_green_main_01": "yonex_racket_astrox99pro_green_main_01.png",
+    "yonex_racket_astrox100zzva_main_01": "yonex_racket_astrox100zzva_main_01.png",
+    "yonex_racket_nanoflare1000z_main_01": "yonex_racket_nanoflare1000z_main_01.png",
+    "yonex_racket_nanoflare700pro_main_01": "yonex_racket_nanoflare700pro_main_01.png",
+    "yonex_racket_nanoflare800pro_main_01": "yonex_racket_nanoflare800pro_main_01.png"
   }
 }

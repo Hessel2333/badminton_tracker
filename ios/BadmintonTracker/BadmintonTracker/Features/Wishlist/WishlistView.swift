@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WishlistView: View {
+  @Environment(\.appAccentColor) private var accent
   @State private var deleteCandidate: WishlistItem?
   @State private var actionError: String?
   @State private var isDeleting = false
@@ -53,7 +54,7 @@ struct WishlistView: View {
                 } label: {
                   Label("入手", systemImage: "bag.badge.plus")
                 }
-                .tint(.blue)
+                .tint(accent)
               }
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -62,6 +63,7 @@ struct WishlistView: View {
               } label: {
                 Label("删除", systemImage: "trash")
               }
+              .tint(SemanticTint.destructive)
             }
           }
         } header: {
@@ -319,6 +321,7 @@ private struct WishlistEditView: View {
               confirmingDelete = true
             } label: {
               Text("删除心愿")
+                .foregroundStyle(SemanticTint.destructive)
             }
           }
         }

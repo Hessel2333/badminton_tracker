@@ -17,6 +17,9 @@ protocol EquipmentRepository {
   func purchaseWishlistItem(id: String, purchaseInput: PurchaseInput) async throws -> LocalAppData
   func updateGearItem(id: String, input: GearEditInput) async throws -> LocalAppData
   func updatePurchaseRecord(id: String, input: PurchaseEditInput) async throws -> LocalAppData
+  func deletePurchaseRecord(id: String) async throws -> LocalAppData
+  func deletePurchaseWithUndo(id: String) async throws -> PurchaseDeletionResult
+  func restorePurchase(_ deletion: PurchaseDeletion) async throws -> LocalAppData
   func createWishlistItem(_ input: WishlistEditInput) async throws -> LocalAppData
   func updateWishlistItem(id: String, input: WishlistEditInput) async throws -> LocalAppData
   func restoreWishlistItem(_ item: WishlistItem) async throws -> LocalAppData
@@ -33,7 +36,25 @@ protocol EquipmentRepository {
 }
 
 extension EquipmentRepository {
+  func deletePurchaseWithUndo(id: String) async throws -> PurchaseDeletionResult {
+    throw CocoaError(.featureUnsupported)
+  }
+
+  func restorePurchase(_ deletion: PurchaseDeletion) async throws -> LocalAppData {
+    throw CocoaError(.featureUnsupported)
+  }
   func restoreWishlistItem(_ item: WishlistItem) async throws -> LocalAppData {
     throw CocoaError(.featureUnsupported)
   }
+}
+
+struct PurchaseDeletion {
+  let purchase: PurchaseRecord
+  let mediaFiles: [String: Data]
+  let relatedPurchaseIDs: Set<String>
+}
+
+struct PurchaseDeletionResult {
+  let data: LocalAppData
+  let deletion: PurchaseDeletion
 }

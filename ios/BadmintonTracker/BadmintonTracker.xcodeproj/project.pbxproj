@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B20000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* Localizable.xcstrings */; };
-		ABCDEF012345678900000001 /* ConsumptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF012345678900000002 /* ConsumptionSection.swift */; };
 		100000000000000000000101 /* BadmintonTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000201 /* BadmintonTrackerApp.swift */; };
 		100000000000000000000102 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000202 /* RootView.swift */; };
 		100000000000000000000103 /* AppTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000203 /* AppTab.swift */; };
@@ -26,9 +24,6 @@
 		100000000000000000000112 /* GearImages in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000212 /* GearImages */; };
 		100000000000000000000113 /* LocalDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000213 /* LocalDataStore.swift */; };
 		100000000000000000000114 /* GearPhotoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000214 /* GearPhotoProcessor.swift */; };
-		A10000000000000000000114 /* ShuttleTubeCutout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000214 /* ShuttleTubeCutout.swift */; };
-		A20000000000000000000114 /* ShuttleTubeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000214 /* ShuttleTubeGeometry.swift */; };
-		A30000000000000000000114 /* RacketAxisGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000214 /* RacketAxisGeometry.swift */; };
 		100000000000000000000115 /* LocalGearCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000215 /* LocalGearCatalog.swift */; };
 		100000000000000000000116 /* EquipmentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000216 /* EquipmentModels.swift */; };
 		100000000000000000000117 /* SwiftDataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000217 /* SwiftDataModels.swift */; };
@@ -38,10 +33,17 @@
 		10000000000000000000011B /* CatalogSeedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021B /* CatalogSeedService.swift */; };
 		10000000000000000000011C /* MediaStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021C /* MediaStorage.swift */; };
 		10000000000000000000011D /* LocalMediaStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021D /* LocalMediaStorage.swift */; };
-		10000000000000000000011E /* Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* Seed */; };
+		10000000000000000000011E /* BadmintonTracker/Resources/Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* BadmintonTracker/Resources/Seed */; };
 		200000000000000000000101 /* LocalFirstArchitectureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000201 /* LocalFirstArchitectureTests.swift */; };
-		200000000000000000000102 /* Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* Seed */; };
+		200000000000000000000102 /* BadmintonTracker/Resources/Seed in Resources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000021E /* BadmintonTracker/Resources/Seed */; };
 		200000000000000000000103 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000203 /* XCTest.framework */; };
+		A10000000000000000000114 /* ShuttleTubeCutout.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000214 /* ShuttleTubeCutout.swift */; };
+		A20000000000000000000114 /* ShuttleTubeGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000214 /* ShuttleTubeGeometry.swift */; };
+		A30000000000000000000114 /* RacketAxisGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000214 /* RacketAxisGeometry.swift */; };
+		ABCDEF012345678900000001 /* ConsumptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF012345678900000002 /* ConsumptionSection.swift */; };
+		B20000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* Localizable.xcstrings */; };
+		C10000000000000000000101 /* PurchaseSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000201 /* PurchaseSuccessView.swift */; };
+		C10000000000000000000102 /* PurchaseDeleteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000202 /* PurchaseDeleteButton.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,8 +57,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B20000000000000000000002 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		ABCDEF012345678900000002 /* ConsumptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsumptionSection.swift; sourceTree = "<group>"; };
 		100000000000000000000201 /* BadmintonTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadmintonTrackerApp.swift; sourceTree = "<group>"; };
 		100000000000000000000202 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		100000000000000000000203 /* AppTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTab.swift; sourceTree = "<group>"; };
@@ -74,9 +74,6 @@
 		100000000000000000000212 /* GearImages */ = {isa = PBXFileReference; lastKnownFileType = folder; path = GearImages; sourceTree = "<group>"; };
 		100000000000000000000213 /* LocalDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDataStore.swift; sourceTree = "<group>"; };
 		100000000000000000000214 /* GearPhotoProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearPhotoProcessor.swift; sourceTree = "<group>"; };
-		A10000000000000000000214 /* ShuttleTubeCutout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeCutout.swift; sourceTree = "<group>"; };
-		A20000000000000000000214 /* ShuttleTubeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeGeometry.swift; sourceTree = "<group>"; };
-		A30000000000000000000214 /* RacketAxisGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacketAxisGeometry.swift; sourceTree = "<group>"; };
 		100000000000000000000215 /* LocalGearCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalGearCatalog.swift; sourceTree = "<group>"; };
 		100000000000000000000216 /* EquipmentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentModels.swift; sourceTree = "<group>"; };
 		100000000000000000000217 /* SwiftDataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataModels.swift; sourceTree = "<group>"; };
@@ -86,11 +83,19 @@
 		10000000000000000000021B /* CatalogSeedService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogSeedService.swift; sourceTree = "<group>"; };
 		10000000000000000000021C /* MediaStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaStorage.swift; sourceTree = "<group>"; };
 		10000000000000000000021D /* LocalMediaStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMediaStorage.swift; sourceTree = "<group>"; };
-		10000000000000000000021E /* Seed */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BadmintonTracker/Resources/Seed; sourceTree = SOURCE_ROOT; };
+		10000000000000000000021E /* BadmintonTracker/Resources/Seed */ = {isa = PBXFileReference; lastKnownFileType = folder; path = BadmintonTracker/Resources/Seed; sourceTree = SOURCE_ROOT; };
+		1000000000000000000002FF /* BadmintonTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BadmintonTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000201 /* LocalFirstArchitectureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFirstArchitectureTests.swift; sourceTree = "<group>"; };
 		200000000000000000000202 /* BadmintonTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BadmintonTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000203 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
-		1000000000000000000002FF /* BadmintonTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BadmintonTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000214 /* ShuttleTubeCutout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeCutout.swift; sourceTree = "<group>"; };
+		A20000000000000000000214 /* ShuttleTubeGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShuttleTubeGeometry.swift; sourceTree = "<group>"; };
+		A30000000000000000000214 /* RacketAxisGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacketAxisGeometry.swift; sourceTree = "<group>"; };
+		ABCDEF012345678900000002 /* ConsumptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsumptionSection.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		C10000000000000000000201 /* PurchaseSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseSuccessView.swift; sourceTree = "<group>"; };
+		C10000000000000000000202 /* PurchaseDeleteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseDeleteButton.swift; sourceTree = "<group>"; };
+		C10000000000000000000203 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +123,7 @@
 				100000000000000000000402 /* BadmintonTracker */,
 				200000000000000000000402 /* BadmintonTrackerTests */,
 				100000000000000000000403 /* Products */,
+				94E3A42B3085F12900DF7943 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -125,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000210 /* Assets.xcassets */,
+				C10000000000000000000203 /* Info.plist */,
 				100000000000000000000404 /* App */,
 				100000000000000000000405 /* Services */,
 				100000000000000000000406 /* Models */,
@@ -222,6 +229,8 @@
 			isa = PBXGroup;
 			children = (
 				10000000000000000000020A /* PurchasesView.swift */,
+				C10000000000000000000201 /* PurchaseSuccessView.swift */,
+				C10000000000000000000202 /* PurchaseDeleteButton.swift */,
 			);
 			path = Purchases;
 			sourceTree = "<group>";
@@ -254,7 +263,7 @@
 		100000000000000000000410 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-                B20000000000000000000002 /* Localizable.xcstrings */,
+				B20000000000000000000002 /* Localizable.xcstrings */,
 				100000000000000000000212 /* GearImages */,
 			);
 			path = Resources;
@@ -304,6 +313,15 @@
 			path = BadmintonTrackerTests;
 			sourceTree = "<group>";
 		};
+		94E3A42B3085F12900DF7943 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				10000000000000000000021E /* BadmintonTracker/Resources/Seed */,
+				200000000000000000000203 /* XCTest.framework */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -350,7 +368,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2710;
 				TargetAttributes = {
 					100000000000000000000501 = {
 						CreatedOnToolsVersion = 26.5;
@@ -366,7 +384,7 @@
 			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
-                "zh-Hans",
+				"zh-Hans",
 				en,
 				Base,
 				"zh-Hans",
@@ -387,10 +405,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-                B20000000000000000000001 /* Localizable.xcstrings in Resources */,
+				B20000000000000000000001 /* Localizable.xcstrings in Resources */,
 				100000000000000000000110 /* Assets.xcassets in Resources */,
 				100000000000000000000112 /* GearImages in Resources */,
-				10000000000000000000011E /* Seed in Resources */,
+				10000000000000000000011E /* BadmintonTracker/Resources/Seed in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -398,7 +416,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				200000000000000000000102 /* Seed in Resources */,
+				200000000000000000000102 /* BadmintonTracker/Resources/Seed in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +435,8 @@
 				100000000000000000000107 /* AppComponents.swift in Sources */,
 				100000000000000000000109 /* DashboardView.swift in Sources */,
 				10000000000000000000010A /* PurchasesView.swift in Sources */,
+				C10000000000000000000101 /* PurchaseSuccessView.swift in Sources */,
+				C10000000000000000000102 /* PurchaseDeleteButton.swift in Sources */,
 				10000000000000000000010B /* GearView.swift in Sources */,
 				ABCDEF012345678900000001 /* ConsumptionSection.swift in Sources */,
 				10000000000000000000010C /* WishlistView.swift in Sources */,
@@ -463,6 +483,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -493,8 +514,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -514,6 +537,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
@@ -524,6 +548,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -554,8 +579,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -568,6 +595,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
@@ -578,27 +606,20 @@
 		100000000000000000000803 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = (
-					AppIconGreen,
-					AppIconVictorBlue,
-					AppIconRed,
-					AppIconSilver,
-					AppIconOrange,
-					AppIconPurple,
-					AppIconAqua,
-				);
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconGreen AppIconVictorBlue AppIconRed AppIconSilver AppIconOrange AppIconPurple AppIconAqua";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BadmintonTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "羽痕";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTracker;
@@ -615,27 +636,20 @@
 		100000000000000000000804 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = (
-					AppIconGreen,
-					AppIconVictorBlue,
-					AppIconRed,
-					AppIconSilver,
-					AppIconOrange,
-					AppIconPurple,
-					AppIconAqua,
-				);
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconGreen AppIconVictorBlue AppIconRed AppIconSilver AppIconOrange AppIconPurple AppIconAqua";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BadmintonTracker/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "羽痕";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tian.BadmintonTracker;
@@ -654,7 +668,6 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -678,7 +691,6 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = ZH82YVR9M2;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

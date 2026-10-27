@@ -1,6 +1,10 @@
 import type { HotGearSeed } from "./hot-gear-catalog";
 
 export const PROJECT_GEAR_CATALOG: HotGearSeed[] = [
+  {"name": "天斧 100ZZ (VA)", "brandName": "YONEX", "modelCode": "AX100ZZ VA", "categoryName": "球拍", "popularity": 70, "imageUrl": "/gear-images/cutout/yonex_racket_astrox100zzva_main_01.png", "tags": []},
+  {"name": "天斧 99 Pro (绿)", "brandName": "YONEX", "modelCode": "AX99 PRO GREEN", "categoryName": "球拍", "popularity": 70, "imageUrl": "/gear-images/cutout/yonex_racket_astrox99pro_green_main_01.png", "tags": []},
+  {"name": "天斧 99 Pro (白虎)", "brandName": "YONEX", "modelCode": "AX99 PRO WHITE TIGER", "categoryName": "球拍", "popularity": 70, "imageUrl": "/gear-images/cutout/yonex_racket_astrox99pro_whitetiger_main_01.png", "tags": []},
+  {"name": "战戟 9000 Power", "brandName": "李宁", "modelCode": "战戟9000 Power", "categoryName": "球拍", "popularity": 70, "imageUrl": "/gear-images/cutout/lining_racket_zhanji9000power_main_01.png", "tags": []},
   // 羽毛球（Shuttlecocks）
   { name: "亚狮龙 1号", brandName: "RSL", modelCode: "No.1", categoryName: "羽毛球", suggestedUnitPriceCny: 145, popularity: 98, imageUrl: "/gear-images/cutout/rsl_shuttlecock_no1_cutout_01.png", tags: ["比赛", "耐打"] },
   { name: "亚狮龙 2号", brandName: "RSL", modelCode: "No.2", categoryName: "羽毛球", suggestedUnitPriceCny: 130, popularity: 95, imageUrl: "/gear-images/cutout/rsl_shuttlecock_no2_cutout_01.png", tags: ["训练", "耐打"] },
@@ -58,10 +62,10 @@ export const PROJECT_GEAR_CATALOG: HotGearSeed[] = [
 
   // 球拍（Rackets）
   { name: "VICTOR 大铁锤", brandName: "VICTOR", modelCode: "TK-HMR", categoryName: "球拍", suggestedUnitPriceCny: 799, popularity: 86, imageUrl: "/gear-images/cutout/victor_racket_thruster_hammer_cutout_01.png", tags: ["进攻"] },
-  { name: "YONEX ASTROX 100ZZ", brandName: "YONEX", modelCode: "AX100ZZ", categoryName: "球拍", suggestedUnitPriceCny: 1680, popularity: 97, tags: ["进攻", "头重"] },
+  { name: "天斧 100ZZ", brandName: "YONEX", modelCode: "AX100ZZ", categoryName: "球拍", suggestedUnitPriceCny: 1680, popularity: 97, imageUrl: "/gear-images/cutout/yonex_racket_astrox100zz_main_01.png", tags: ["进攻", "头重"] },
   { name: "YONEX ASTROX 99 PRO", brandName: "YONEX", modelCode: "AX99 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 93, tags: ["进攻"] },
   { name: "YONEX ASTROX 88D PRO", brandName: "YONEX", modelCode: "AX88D PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 94, tags: ["双打后场"] },
-  { name: "YONEX ASTROX 88S PRO", brandName: "YONEX", modelCode: "AX88S PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 91, tags: ["双打前场"] },
+  { name: "天斧 88S Pro", brandName: "YONEX", modelCode: "AX88S PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 91, imageUrl: "/gear-images/cutout/yonex_racket_astrox88spro_main_01.png", tags: ["双打前场"] },
   { name: "YONEX ARCSABER 11 PRO", brandName: "YONEX", modelCode: "ARC11 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 92, imageUrl: "/gear-images/cutout/yonex_racket_arcsaber11pro_main_01.png", tags: ["控制"] },
   { name: "YONEX ARCSABER 7 PRO", brandName: "YONEX", modelCode: "ARC7 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1499, popularity: 86, imageUrl: "/gear-images/cutout/yonex_racket_arcsaber7pro_main_01.png", tags: ["均衡"] },
   { name: "YONEX ASTROX 77 PRO", brandName: "YONEX", modelCode: "AX77 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1499, popularity: 90, imageUrl: "/gear-images/cutout/yonex_racket_astrox77pro_main_01.png", tags: ["全能"] },
@@ -71,9 +75,9 @@ export const PROJECT_GEAR_CATALOG: HotGearSeed[] = [
   { name: "李宁 战戟 8000", brandName: "李宁", modelCode: "AYPT369-4", categoryName: "球拍", suggestedUnitPriceCny: 1499, popularity: 88, imageUrl: "/gear-images/cutout/lining_racket_zhanji8000_main_01.png", tags: ["均衡", "推荐"] },
   { name: "李宁 雷霆 80 (黑)", brandName: "李宁", modelCode: "AYPT271-4", categoryName: "球拍", suggestedUnitPriceCny: 1399, popularity: 92, imageUrl: "/gear-images/cutout/lining_racket_leiting80black_main_01.png", tags: ["进攻", "经典"] },
   { name: "李宁 雷霆 80 (白)", brandName: "李宁", modelCode: "AYPV035-4", categoryName: "球拍", suggestedUnitPriceCny: 1399, popularity: 91, imageUrl: "/gear-images/cutout/lining_racket_leiting80white_main_01.png", tags: ["进攻", "颜值"] },
-  { name: "YONEX NANOFLARE 1000Z", brandName: "YONEX", modelCode: "NF1000Z", categoryName: "球拍", suggestedUnitPriceCny: 1690, popularity: 88, tags: ["速度"] },
-  { name: "YONEX NANOFLARE 800 PRO", brandName: "YONEX", modelCode: "NF800 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 83, tags: ["速度"] },
-  { name: "YONEX NANOFLARE 700 PRO", brandName: "YONEX", modelCode: "NF700 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1499, popularity: 80, tags: ["速度", "均衡"] },
+  { name: "疾光 1000Z", brandName: "YONEX", modelCode: "NF1000Z", categoryName: "球拍", suggestedUnitPriceCny: 1690, popularity: 88, imageUrl: "/gear-images/cutout/yonex_racket_nanoflare1000z_main_01.png", tags: ["NANOFLARE", "速度"] },
+  { name: "疾光 800 Pro", brandName: "YONEX", modelCode: "NF800 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1599, popularity: 83, imageUrl: "/gear-images/cutout/yonex_racket_nanoflare800pro_main_01.png", tags: ["NANOFLARE", "速度"] },
+  { name: "疾光 700 Pro", brandName: "YONEX", modelCode: "NF700 PRO", categoryName: "球拍", suggestedUnitPriceCny: 1499, popularity: 80, imageUrl: "/gear-images/cutout/yonex_racket_nanoflare700pro_main_01.png", tags: ["NANOFLARE", "速度", "均衡"] },
   { name: "VICTOR AURASPEED 90K II", brandName: "VICTOR", modelCode: "ARS-90K II", categoryName: "球拍", suggestedUnitPriceCny: 1380, popularity: 86, tags: ["双打", "速度"] },
   { name: "VICTOR AURASPEED 100X", brandName: "VICTOR", modelCode: "ARS-100X", categoryName: "球拍", suggestedUnitPriceCny: 1390, popularity: 82, tags: ["控制"] },
   { name: "VICTOR THRUSTER F C", brandName: "VICTOR", modelCode: "TK-F C", categoryName: "球拍", suggestedUnitPriceCny: 1390, popularity: 84, tags: ["进攻"] },

@@ -66,6 +66,12 @@ struct GearPresentationTests {
       modelCode: nil, categoryName: "球拍", entries: entries)
     assert(victorEntry?.name == "驭 12 (ZSW J)")
     assert(victorEntry?.searchText.contains("DriveX 12") == true)
+    for (name, expected) in [("NANOFLARE 1000Z", "疾光 1000Z"), ("YONEX NANOFLARE 700 PRO", "疾光 700 Pro"), ("NF-800 PRO", "疾光 800 Pro"), ("疾光700pro", "疾光 700 Pro")] {
+      for catalog in [entries, []] {
+        assert(GearDisplayName.resolve(name: name, brand: "YONEX", model: nil,
+          category: "球拍", imageKey: nil, entries: catalog) == expected)
+      }
+    }
     func item(_ brand: String, price: Double?, date: String? = nil) -> GearWallItem {
       GearWallItem(id: brand, name: brand, coverImageUrl: nil, imageKey: nil, modelCode: nil,
         createdAt: nil, latestPurchaseDate: date, referenceUnitPriceCny: price,

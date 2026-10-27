@@ -1,4 +1,34 @@
 import SwiftUI
+import Observation
+
+@MainActor @Observable
+final class AppNavigation {
+  var selectedTab: AppTab = .dashboard
+  var gearReveal: GearReveal?
+  private(set) var gearStackID = UUID()
+
+  struct GearReveal: Identifiable {
+    let id = UUID()
+    let gearID: String
+  }
+
+  func showGear(id: String) {
+    gearReveal = GearReveal(gearID: id)
+    gearStackID = UUID()
+    selectedTab = .gear
+  }
+}
+
+private struct AppNavigationKey: EnvironmentKey {
+  static let defaultValue: AppNavigation? = nil
+}
+
+extension EnvironmentValues {
+  var appNavigation: AppNavigation? {
+    get { self[AppNavigationKey.self] }
+    set { self[AppNavigationKey.self] = newValue }
+  }
+}
 
 enum AppTab: String, CaseIterable, Identifiable {
   case dashboard
